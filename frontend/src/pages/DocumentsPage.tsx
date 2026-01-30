@@ -18,13 +18,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { api, type DocumentResponse, type CollectionInfo } from '@/lib/api';
+import { api, type CollectionInfo } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+
+interface DocumentData {
+  document_id: string;
+  filename: string;
+  collection: string;
+  chunk_count: number;
+  uploaded_at: string;
+  metadata: Record<string, any>;
+}
 import { Upload, Trash2, Loader2, FileText, Download } from 'lucide-react';
 
 export function DocumentsPage() {
+  const { toast } = useToast();
   const [collections, setCollections] = useState<CollectionInfo[]>([]);
   const [selectedCollection, setSelectedCollection] = useState('');
-  const [documents, setDocuments] = useState<DocumentResponse[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCollections, setLoadingCollections] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -80,14 +91,21 @@ export function DocumentsPage() {
 
     try {
       setUploading(true);
-      await api.documents.upload(uploadFile, uploadCollection);
+      const result = await api.documents.upload(uploadFile, uploadCollection);
       setUploadDialogOpen(false);
       setUploadFile(null);
       loadDocuments();
-      alert('Document uploaded successfully! Processing in background.');
+      toast({
+        title: "Upload successful",
+        description: `Document uploaded successfully! Task ID: ${result.task_id}`,
+      });
     } catch (error) {
       console.error('Failed to upload document:', error);
-      alert('Failed to upload document');
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload document",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
     }
@@ -101,9 +119,17 @@ export function DocumentsPage() {
       setDeleteDialogOpen(false);
       setSelectedDocument(null);
       loadDocuments();
+      toast({
+        title: "Document deleted",
+        description: `Document "${selectedDocument?.filename}" deleted successfully`,
+      });
     } catch (error) {
       console.error('Failed to delete document:', error);
-      alert('Failed to delete document');
+      toast({
+        title: "Deletion failed",
+        description: "Failed to delete document",
+        variant: "destructive",
+      });
     }
   };
 

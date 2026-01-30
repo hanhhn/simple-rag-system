@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileText, Database, Search, Activity } from 'lucide-react';
+import { HealthStatus } from '@/components/HealthStatus';
+import type { HealthResponse } from '@/lib/api';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -43,7 +45,10 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        <HealthStatus />
+        {children}
+      </main>
     </div>
   );
 }

@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { api, type QueryResponse, type CollectionInfo } from '@/lib/api';
 import { Loader2, Send } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export function QueryPage() {
+  const { toast } = useToast();
   const [query, setQuery] = useState('');
   const [collection, setCollection] = useState('');
   const [collections, setCollections] = useState<CollectionInfo[]>([]);
@@ -52,9 +55,17 @@ export function QueryPage() {
         use_rag: useRag,
       });
       setResponse(result);
+      toast({
+        title: "Query processed successfully",
+        description: `Retrieved ${result.retrieval_count} documents`,
+      });
     } catch (error) {
       console.error('Query failed:', error);
-      alert('Failed to process query. Please try again.');
+      toast({
+        title: "Query failed",
+        description: "Failed to process query. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -179,16 +190,18 @@ export function QueryPage() {
         </CardContent>
       </Card>
 
-      {response && (
+              {response && (
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Answer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{response.answer || 'No answer generated'}</p>
-            </CardContent>
-          </Card>
+          {response.answer && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Answer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap">{response.answer}</p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
@@ -204,8 +217,8 @@ export function QueryPage() {
                       <Badge variant="secondary">Document {idx + 1}</Badge>
                       <Badge variant="outline">Score: {doc.score.toFixed(4)}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{doc.text}</p>
-                    {Object.keys(doc.metadata).length > 0 && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{doc.text}</p>
+                    {doc.metadata && Object.keys(doc.metadata).length > 0 && (
                       <div className="text-xs text-muted-foreground">
                         <strong>Metadata:</strong> {JSON.stringify(doc.metadata, null, 2)}
                       </div>

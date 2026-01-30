@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/table';
 import { api, type CollectionInfo } from '@/lib/api';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export function CollectionsPage() {
+  const { toast } = useToast();
   const [collections, setCollections] = useState<CollectionInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -63,9 +65,18 @@ export function CollectionsPage() {
       setNewCollectionDimension('');
       setNewCollectionMetric('Cosine');
       loadCollections();
+      toast({
+        title: "Collection created",
+        description: `Collection "${newCollectionName}" created successfully`,
+        variant: "default",
+      });
     } catch (error) {
       console.error('Failed to create collection:', error);
-      alert('Failed to create collection');
+      toast({
+        title: "Creation failed",
+        description: "Failed to create collection",
+        variant: "destructive",
+      });
     }
   };
 
@@ -77,9 +88,17 @@ export function CollectionsPage() {
       setDeleteDialogOpen(false);
       setSelectedCollection(null);
       loadCollections();
+      toast({
+        title: "Collection deleted",
+        description: `Collection "${selectedCollection}" deleted successfully`,
+      });
     } catch (error) {
       console.error('Failed to delete collection:', error);
-      alert('Failed to delete collection');
+      toast({
+        title: "Deletion failed",
+        description: "Failed to delete collection",
+        variant: "destructive",
+      });
     }
   };
 

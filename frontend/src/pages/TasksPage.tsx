@@ -9,9 +9,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { api, type TaskResponse } from '@/lib/api';
-import { Loader2, RefreshCw, X, Info } from 'lucide-react';
+import { api } from '@/lib/api';
+
+interface TaskData {
+  task_id: string;
+  status: 'PENDING' | 'STARTED' | 'SUCCESS' | 'FAILURE' | 'RETRY' | 'REVOKED';
+  task_name: string;
+  result?: Record<string, any> | null;
+  error?: string | null;
+  traceback?: string | null;
+  created_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  progress?: number | null;
+  metadata: Record<string, any>;
+}
+import { Loader2, RefreshCw, X, Info, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import {
   Dialog,
   DialogContent,
@@ -22,10 +38,11 @@ import {
 } from '@/components/ui/dialog';
 
 export function TasksPage() {
-  const [tasks, setTasks] = useState<TaskResponse[]>([]);
+  const { toast } = useToast();
+  const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
   const [revokingTaskId, setRevokingTaskId] = useState<string | null>(null);
 
@@ -63,7 +80,22 @@ export function TasksPage() {
       RETRY: 'outline',
       REVOKED: 'outline',
     };
-    return <Badge variant={variants[status] || 'outline'}>{status}</Badge>;
+
+    const icons: Record<string, React.ReactNode> = {
+      SUCCESS: <CheckCircle2 className="h-3 w-3 mr-1" />,
+      PENDING: <Clock className="h-3 w-3 mr-1" />,
+      STARTED: <Loader2 className="h-3 w-3 mr-1 animate-spin" />,
+      FAILURE: <XCircle className="h-3 w-3 mr-1" />,
+      RETRY: <RefreshCw className="h-3 w-3 mr-1" />,
+      REVOKED: <XCircle className="h-3 w-3 mr-1" />,
+    };
+
+    return (
+      <Badge variant={variants[status] || 'outline'} className="flex items-center">
+        {icons[status]}
+        {status}
+      </Badge>
+    );
   };
 
   const handleViewTask = async (taskId: string) => {
@@ -73,7 +105,11 @@ export function TasksPage() {
       setTaskDetailOpen(true);
     } catch (error) {
       console.error('Failed to get task details:', error);
-      alert('Failed to get task details');
+      toast({
+        title: "Failed to load task details",
+        description: "Could not retrieve task information",
+        variant: "destructive",
+      });
     }
   };
 
@@ -84,9 +120,17 @@ export function TasksPage() {
       setRevokingTaskId(taskId);
       await api.tasks.revoke(taskId);
       loadTasks();
+      toast({
+        title: "Task cancelled",
+        description: "Task has been successfully revoked",
+      });
     } catch (error) {
       console.error('Failed to revoke task:', error);
-      alert('Failed to revoke task');
+      toast({
+        title: "Cancellation failed",
+        description: "Failed to revoke task",
+        variant: "destructive",
+      });
     } finally {
       setRevokingTaskId(null);
     }
@@ -151,14 +195,9 @@ export function TasksPage() {
                     <TableCell>{task.task_name}</TableCell>
                     <TableCell>{getStatusBadge(task.status)}</TableCell>
                     <TableCell>
-                      {task.progress !== null ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 bg-secondary rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${task.progress * 100}%` }}
-                            />
-                          </div>
+                      {typeof task.progress === 'number' ? (
+                        <div className="flex items-center gap-2 min-w-[150px]">
+                          <Progress value={task.progress * 100} className="flex-1" />
                           <span className="text-sm">{(task.progress * 100).toFixed(0)}%</span>
                         </div>
                       ) : (
@@ -220,7 +259,7 @@ export function TasksPage() {
               <div>
                 <strong>Status:</strong> {getStatusBadge(selectedTask.status)}
               </div>
-              {selectedTask.progress !== null && (
+              {typeof selectedTask.progress === 'number' && (
                 <div>
                   <strong>Progress:</strong> {(selectedTask.progress * 100).toFixed(0)}%
                 </div>
