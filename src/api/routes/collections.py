@@ -29,7 +29,23 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/collections", tags=["Collections"])
 
 
-@router.post("/", response_model=CollectionResponse)
+@router.post(
+    "/", 
+    response_model=CollectionResponse,
+    status_code=201,
+    summary="Create a new collection",
+    description="""
+    Create a new vector collection for storing document embeddings.
+    
+    **Parameters:**
+    - `name`: Collection name (alphanumeric, underscores, hyphens allowed)
+    - `dimension`: Embedding dimension (auto-detected from model if not provided)
+    - `distance_metric`: Distance metric for similarity search (Cosine, Euclid, or Dot)
+    
+    **Returns:**
+    - Collection information including name, dimension, and status
+    """
+)
 async def create_collection(
     request: CollectionCreateRequest,
     vector_store = Depends(get_vector_store),
@@ -109,7 +125,18 @@ async def create_collection(
         )
 
 
-@router.get("/", response_model=CollectionListResponse)
+@router.get(
+    "/", 
+    response_model=CollectionListResponse,
+    status_code=200,
+    summary="List all collections",
+    description="""
+    Retrieve a list of all available vector collections.
+    
+    **Returns:**
+    - List of collections with metadata (name, vector count, dimension, status)
+    """
+)
 async def list_collections(
     vector_store = Depends(get_vector_store)
 ) -> CollectionListResponse:
@@ -133,7 +160,7 @@ async def list_collections(
                 collections.append(CollectionInfo(
                     name=info["name"],
                     vector_count=info["vector_count"],
-                    dimension=info["name"],
+                    dimension=info.get("dimension", 0),
                     status=info["status"],
                     created_at=datetime.utcnow(),
                     distance_metric="Cosine"  # Default, would need to store this
@@ -169,7 +196,21 @@ async def list_collections(
         )
 
 
-@router.get("/{collection_name}", response_model=CollectionResponse)
+@router.get(
+    "/{collection_name}", 
+    response_model=CollectionResponse,
+    status_code=200,
+    summary="Get collection information",
+    description="""
+    Retrieve detailed information about a specific collection.
+    
+    **Parameters:**
+    - `collection_name`: Name of the collection to retrieve
+    
+    **Returns:**
+    - Collection details including vector count, dimension, and status
+    """
+)
 async def get_collection(
     collection_name: str,
     vector_store = Depends(get_vector_store)
@@ -198,7 +239,7 @@ async def get_collection(
             collection=CollectionInfo(
                 name=info["name"],
                 vector_count=info["vector_count"],
-                dimension=info["name"],
+                dimension=info.get("dimension", 0),
                 status=info["status"],
                 created_at=datetime.utcnow(),
                 distance_metric="Cosine"
@@ -224,7 +265,23 @@ async def get_collection(
         )
 
 
-@router.delete("/{collection_name}", response_model=SuccessResponse)
+@router.delete(
+    "/{collection_name}", 
+    response_model=SuccessResponse,
+    status_code=200,
+    summary="Delete a collection",
+    description="""
+    Delete a collection and all its associated documents and vectors.
+    
+    **Warning:** This action is irreversible and will delete all documents and embeddings in the collection.
+    
+    **Parameters:**
+    - `collection_name`: Name of the collection to delete
+    
+    **Returns:**
+    - Success response confirming deletion
+    """
+)
 async def delete_collection(
     collection_name: str,
     vector_store = Depends(get_vector_store),

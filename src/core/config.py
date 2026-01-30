@@ -6,9 +6,9 @@ All configuration is loaded from environment variables with sensible defaults.
 """
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -72,25 +72,65 @@ class EmbeddingConfig(BaseSettings):
 
 
 class DocumentConfig(BaseSettings):
-    """Document processing configuration."""
+    """Document processing configuration.
+
+    Note: to avoid Pydantic Settings trying to JSON-parse a list field from
+    `.env` (which breaks on empty strings), we store the raw env value as a
+    string and expose a parsed `supported_formats` property instead.
+    """
 
     max_size: int = Field(default=10485760, description="Maximum document size in bytes (10MB)")
     chunk_size: int = Field(default=1000, ge=100, description="Chunk size for text splitting")
     chunk_overlap: int = Field(default=200, ge=0, description="Chunk overlap size")
-    supported_formats: list[str] = Field(
-        default=["pdf", "docx", "txt", "md"],
-        description="Supported document formats"
-    )
-    
-    model_config = SettingsConfigDict(env_prefix="DOCUMENT_", env_file=".env", extra="ignore")
 
-    @field_validator("supported_formats", mode="before")
-    @classmethod
-    def parse_formats(cls, v: str | list[str]) -> list[str]:
-        """Parse supported formats from comma-separated string or list."""
-        if isinstance(v, str):
-            return [fmt.strip().lower() for fmt in v.split(",")]
-        return [fmt.lower() for fmt in v]
+    # Raw value from env / .env (may be empty string, CSV, JSON, etc.)
+    supported_formats_raw: str | None = Field(
+        default=None,
+        description="Raw supported formats from environment (string)",
+        alias="supported_formats",
+    )
+
+    model_config = SettingsConfigDict(
+        env_prefix="DOCUMENT_",
+        env_file=".env",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    @property
+    def supported_formats(self) -> list[str]:
+        """Return parsed list of supported formats with safe defaults."""
+        value = self.supported_formats_raw
+
+        # Default if nothing configured
+        if value is None:
+            return ["pdf", "docx", "txt", "md"]
+
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return ["pdf", "docx", "txt", "md"]
+
+            # Try JSON list first
+            try:
+                import json
+
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [
+                        fmt.lower() if isinstance(fmt, str) else str(fmt).lower()
+                        for fmt in parsed
+                    ]
+            except Exception:
+                # Fall through to CSV parsing
+                pass
+
+            # Fallback: comma-separated string
+            formats = [fmt.strip().lower() for fmt in text.split(",") if fmt.strip()]
+            return formats or ["pdf", "docx", "txt", "md"]
+
+        # Final fallback
+        return ["pdf", "docx", "txt", "md"]
 
 
 class StorageConfig(BaseSettings):
@@ -162,9 +202,13 @@ class CeleryConfig(BaseSettings):
     )
     task_serializer: str = Field(default="json", description="Task serialization format")
     result_serializer: str = Field(default="json", description="Result serialization format")
-    accept_content: list[str] = Field(
-        default=["json"],
-        description="Accepted content types"
+    # Store raw env value as string to avoid Pydantic Settings trying to JSON-parse
+    # an empty list field from `.env` (which causes JSONDecodeError). We expose a
+    # parsed property instead.
+    accept_content_raw: str | None = Field(
+        default=None,
+        description="Raw accepted content types from environment (string)",
+        alias="accept_content",
     )
     timezone: str = Field(default="UTC", description="Timezone for task scheduling")
     enable_utc: bool = Field(default=True, description="Enable UTC timezone")
@@ -174,7 +218,47 @@ class CeleryConfig(BaseSettings):
     worker_prefetch_multiplier: int = Field(default=4, ge=1, description="Worker prefetch multiplier")
     worker_max_tasks_per_child: int = Field(default=1000, ge=1, description="Max tasks per worker child")
     
-    model_config = SettingsConfigDict(env_prefix="CELERY_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="CELERY_",
+        env_file=".env",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    @property
+    def accept_content(self) -> list[str]:
+        """Return parsed list of accepted content types with safe defaults."""
+        value = self.accept_content_raw
+
+        # Default
+        if value is None:
+            return ["json"]
+
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return ["json"]
+
+            # Try JSON list first
+            try:
+                import json
+
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [
+                        item.lower() if isinstance(item, str) else str(item).lower()
+                        for item in parsed
+                    ]
+            except Exception:
+                # Fall through to CSV parsing
+                pass
+
+            # Fallback: comma-separated
+            items = [item.strip().lower() for item in text.split(",") if item.strip()]
+            return items or ["json"]
+
+        # Fallback
+        return ["json"]
 
 
 class Config:

@@ -37,7 +37,29 @@ def _get_task_status(task: AsyncResult) -> TaskStatus:
         return TaskStatus.PENDING
 
 
-@router.get("/{task_id}", response_model=TaskResponse)
+@router.get(
+    "/{task_id}", 
+    response_model=TaskResponse,
+    status_code=200,
+    summary="Get task status",
+    description="""
+    Retrieve the current status and result of a background task.
+    
+    **Task Statuses:**
+    - `PENDING`: Task is waiting to be processed
+    - `STARTED`: Task is currently being processed
+    - `SUCCESS`: Task completed successfully
+    - `FAILURE`: Task failed with an error
+    - `RETRY`: Task is being retried
+    - `REVOKED`: Task was cancelled
+    
+    **Parameters:**
+    - `task_id`: Celery task ID (returned from document upload endpoint)
+    
+    **Returns:**
+    - Task status, result (if completed), or error (if failed)
+    """
+)
 async def get_task_status(task_id: str) -> TaskResponse:
     """
     Get the status of a task.
@@ -115,7 +137,20 @@ async def get_task_status(task_id: str) -> TaskResponse:
         )
 
 
-@router.post("/{task_id}/revoke")
+@router.post(
+    "/{task_id}/revoke",
+    status_code=200,
+    summary="Cancel a task",
+    description="""
+    Cancel (revoke) a running or pending task.
+    
+    **Parameters:**
+    - `task_id`: Celery task ID to cancel
+    
+    **Returns:**
+    - Confirmation of task cancellation
+    """
+)
 async def revoke_task(task_id: str) -> dict:
     """
     Revoke (cancel) a task.
@@ -152,7 +187,25 @@ async def revoke_task(task_id: str) -> dict:
         )
 
 
-@router.get("/", response_model=TaskListResponse)
+@router.get(
+    "/", 
+    response_model=TaskListResponse,
+    status_code=200,
+    summary="List active tasks",
+    description="""
+    List currently active tasks (running or pending).
+    
+    **Note:** Celery doesn't provide a built-in way to list all tasks.
+    This endpoint shows only active tasks from workers.
+    
+    **Parameters:**
+    - `status`: Optional filter by task status (PENDING, STARTED, SUCCESS, etc.)
+    - `limit`: Maximum number of tasks to return (1-1000, default: 100)
+    
+    **Returns:**
+    - List of active tasks with their status
+    """
+)
 async def list_tasks(
     status: Optional[TaskStatus] = Query(None, description="Filter by task status"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of tasks to return")

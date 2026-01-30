@@ -15,7 +15,25 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/health", tags=["Health"])
 
 
-@router.get("/", response_model=HealthResponse)
+@router.get(
+    "", 
+    response_model=HealthResponse,
+    status_code=200,
+    summary="Health check",
+    description="""
+    Check the overall health status of the system and dependent services.
+    
+    **Checks:**
+    - Qdrant vector database connectivity
+    - Ollama LLM service availability
+    - Embedding model availability
+    
+    **Returns:**
+    - Overall system status (healthy/degraded)
+    - Status of each dependent service
+    - API version and timestamp
+    """
+)
 async def health_check() -> HealthResponse:
     """
     Health check endpoint.
@@ -78,7 +96,20 @@ async def health_check() -> HealthResponse:
     )
 
 
-@router.get("/ready", response_model=dict)
+@router.get(
+    "/ready", 
+    response_model=dict,
+    status_code=200,
+    summary="Readiness check",
+    description="""
+    Simple readiness check to verify the application is ready to handle requests.
+    
+    This is a lightweight endpoint useful for load balancers and orchestration systems.
+    
+    **Returns:**
+    - Readiness status and timestamp
+    """
+)
 async def readiness_check() -> dict:
     """
     Readiness check endpoint.

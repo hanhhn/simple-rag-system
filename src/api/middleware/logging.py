@@ -5,8 +5,8 @@ import time
 from typing import Callable
 
 from fastapi import Request, Response
-from fastapi.middleware import Middleware
 from starlette.types import ASGIApp
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.logging import get_logger
 
@@ -14,7 +14,7 @@ from src.core.logging import get_logger
 logger = get_logger(__name__)
 
 
-class LoggingMiddleware:
+class LoggingMiddleware(BaseHTTPMiddleware):
     """
     Middleware for logging all API requests and responses.
     
@@ -25,16 +25,16 @@ class LoggingMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         """
         Initialize logging middleware.
-        
+
         Args:
             app: FastAPI application instance
         """
-        self.app = app
+        super().__init__(app)
     
-    async def __call__(
+    async def dispatch(
         self,
         request: Request,
-        call_next: Callable
+        call_next: Callable,
     ) -> Response:
         """
         Process request and log information.

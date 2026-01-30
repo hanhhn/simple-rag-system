@@ -15,7 +15,31 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/query", tags=["Query"])
 
 
-@router.post("/", response_model=QueryResponse)
+@router.post(
+    "/", 
+    response_model=QueryResponse,
+    status_code=200,
+    summary="Process a RAG query",
+    description="""
+    Process a query through the RAG (Retrieval-Augmented Generation) pipeline.
+    
+    This endpoint:
+    1. Embeds the query text
+    2. Searches for relevant documents in the specified collection
+    3. Generates an answer using the LLM with retrieved context (if use_rag=True)
+    
+    **Parameters:**
+    - `query`: Natural language question or query text
+    - `collection`: Name of the collection to search
+    - `top_k`: Number of most relevant documents to retrieve (default: 5)
+    - `score_threshold`: Minimum similarity score (0.0-1.0) to filter results
+    - `use_rag`: Whether to generate an answer using LLM (True) or just return documents (False)
+    - `stream`: Whether to stream the response (for real-time generation)
+    
+    **Returns:**
+    - Query response with generated answer (if use_rag=True) and retrieved documents
+    """
+)
 async def process_query(
     request: QueryRequest,
     query_processor = Depends(get_query_processor)

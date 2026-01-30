@@ -10,21 +10,68 @@ from pydantic import BaseModel, Field
 class QueryRequest(BaseModel):
     """Request model for query."""
     
-    query: str = Field(..., min_length=1, max_length=2000, description="Query text")
-    collection: str = Field(..., min_length=1, max_length=64, description="Collection name")
-    top_k: int = Field(default=5, ge=1, le=100, description="Number of results to retrieve")
-    score_threshold: float = Field(default=0.0, ge=0.0, le=1.0, description="Minimum similarity score")
-    use_rag: bool = Field(default=True, description="Whether to use RAG generation")
-    stream: bool = Field(default=False, description="Whether to stream response")
+    query: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=2000, 
+        description="Query text",
+        examples=["What is machine learning?", "Explain the concept of embeddings"]
+    )
+    collection: str = Field(
+        ..., 
+        min_length=1, 
+        max_length=64, 
+        description="Collection name",
+        examples=["my_documents", "research_papers"]
+    )
+    top_k: int = Field(
+        default=5, 
+        ge=1, 
+        le=100, 
+        description="Number of results to retrieve",
+        examples=[5, 10, 20]
+    )
+    score_threshold: float = Field(
+        default=0.0, 
+        ge=0.0, 
+        le=1.0, 
+        description="Minimum similarity score (0.0 to 1.0)",
+        examples=[0.0, 0.5, 0.7]
+    )
+    use_rag: bool = Field(
+        default=True, 
+        description="Whether to use RAG generation (if False, only returns retrieved documents)"
+    )
+    stream: bool = Field(
+        default=False, 
+        description="Whether to stream response (for real-time answer generation)"
+    )
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "query": "What is the main topic of the document?",
+                "collection": "my_documents",
+                "top_k": 5,
+                "score_threshold": 0.0,
+                "use_rag": True,
+                "stream": False
+            }
+        }
+    }
 
 
 class RetrievedDocument(BaseModel):
     """Retrieved document model."""
     
-    id: str = Field(description="Document ID")
-    score: float = Field(description="Similarity score")
-    text: str = Field(description="Document text content")
-    metadata: dict = Field(default_factory=dict, description="Document metadata")
+    id: str = Field(description="Document ID", examples=["doc_123", "chunk_456"])
+    score: float = Field(description="Similarity score (0.0 to 1.0)", examples=[0.95, 0.87, 0.72])
+    text: str = Field(description="Document text content", examples=["This is a sample document chunk..."])
+    metadata: dict = Field(
+        default_factory=dict, 
+        description="Document metadata",
+        examples=[{"filename": "document.pdf", "chunk_index": 0, "collection": "my_documents"}]
+    )
 
 
 class QueryResponse(BaseModel):

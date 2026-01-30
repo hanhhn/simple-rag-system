@@ -420,7 +420,8 @@ class VectorStore:
             info = self.client.get_collection(collection_name=collection_name)
             
             return {
-                "name": info.config.params.vectors.size,
+                "name": collection_name,
+                "dimension": info.config.params.vectors.size,
                 "vector_count": info.points_count,
                 "status": info.status,
                 "optimizer_status": info.optimizer_status,

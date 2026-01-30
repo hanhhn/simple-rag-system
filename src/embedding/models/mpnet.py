@@ -177,4 +177,4 @@ class MPNetModel(EmbeddingModel):
         similarity = dot_product / (norm1 * norm2)
         
         # Ensure result is in [0, 1] range
-        return float(max(0.0, min(1.0, similarity))
+        return float(max(0.0, min(1.0, similarity)))

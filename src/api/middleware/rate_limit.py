@@ -6,6 +6,7 @@ from typing import Callable
 from fastapi import Request, Response, HTTPException
 from fastapi.middleware import Middleware
 from starlette.types import ASGIApp
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.core.logging import get_logger
 from src.core.exceptions import RateLimitExceededError
@@ -16,7 +17,7 @@ from src.core.config import get_config
 logger = get_logger(__name__)
 
 
-class RateLimitMiddleware:
+class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     Middleware for rate limiting API requests.
     
@@ -31,13 +32,13 @@ class RateLimitMiddleware:
     ) -> None:
         """
         Initialize rate limiting middleware.
-        
+
         Args:
             app: FastAPI application instance
             requests_per_minute: Request limit per minute
         """
-        self.app = app
-        
+        super().__init__(app)
+
         config = get_config()
         max_requests = requests_per_minute or config.security.rate_limit_requests
         
@@ -45,17 +46,17 @@ class RateLimitMiddleware:
             max_requests=max_requests,
             window=config.security.rate_limit_window
         )
-        
+
         logger.info(
             "Rate limiting middleware initialized",
             max_requests=max_requests,
             window=config.security.rate_limit_window
         )
-    
-    async def __call__(
+
+    async def dispatch(
         self,
         request: Request,
-        call_next: Callable
+        call_next: Callable,
     ) -> Response:
         """
         Process request and check rate limit.

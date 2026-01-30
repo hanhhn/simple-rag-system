@@ -15,20 +15,82 @@ from src.api.routes import health, documents, query, collections, tasks
 from src.api.middleware import logging as logging_middleware
 from src.api.middleware import rate_limit as rate_limit_middleware
 
-
 # Configure logging
 configure_logging()
 logger = get_logger(__name__)
 config = get_config()
 
 
+# OpenAPI tags metadata
+tags_metadata = [
+    {
+        "name": "Health",
+        "description": "Health check and readiness endpoints for monitoring system status.",
+    },
+    {
+        "name": "Collections",
+        "description": "Manage vector collections. Collections are containers for document embeddings.",
+    },
+    {
+        "name": "Documents",
+        "description": "Upload, list, download, and delete documents. Documents are processed and chunked for embedding.",
+    },
+    {
+        "name": "Query",
+        "description": "Query the RAG system. Search documents and generate answers using retrieval-augmented generation.",
+    },
+    {
+        "name": "Tasks",
+        "description": "Monitor and manage background tasks (e.g., document processing tasks).",
+    },
+    {
+        "name": "Root",
+        "description": "Root endpoint and API information.",
+    },
+]
+
+#
 # Create FastAPI application
 app = FastAPI(
     title=config.app.app_name,
     version=config.app.api_version,
-    description="A simple RAG (Retrieval-Augmented Generation) system using local LLMs",
+    description="""
+    A simple RAG (Retrieval-Augmented Generation) system using local LLMs.
+    
+    ## Features
+    
+    * **Collection Management**: Create and manage vector collections
+    * **Document Processing**: Upload documents (PDF, TXT, MD, DOCX) with automatic chunking and embedding
+    * **RAG Queries**: Query documents using semantic search with LLM-powered answer generation
+    * **Task Management**: Monitor background document processing tasks
+    * **Health Monitoring**: Check system and service health status
+    
+    ## Getting Started
+    
+    1. Create a collection using the Collections API
+    2. Upload documents to the collection
+    3. Query the collection using natural language questions
+    """,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    openapi_tags=tags_metadata,
+    contact={
+        "name": "RAG System API",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    servers=[
+        {
+            "url": f"http://{config.app.app_host}:{config.app.app_port}",
+            "description": "Development server",
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Local server",
+        },
+    ],
 )
 
 # Add CORS middleware

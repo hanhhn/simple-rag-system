@@ -15,7 +15,7 @@ from src.core.exceptions import (
     ServiceError,
     FileNotFoundError as CoreFileNotFoundError
 )
-from src.core.security import generate_id
+from src.utils.helpers import generate_id
 from src.core.config import get_config
 from src.api.models.document import (
     DocumentUploadRequest,
@@ -42,7 +42,30 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
-@router.post("/upload", response_model=DocumentUploadTaskResponse)
+@router.post(
+    "/upload", 
+    response_model=DocumentUploadTaskResponse,
+    status_code=202,
+    summary="Upload a document",
+    description="""
+    Upload a document for asynchronous processing.
+    
+    This endpoint accepts a file upload (PDF, TXT, MD, DOCX), saves it to storage, 
+    and queues it for background processing (parse, chunk, embed, store).
+    
+    **Supported file formats:** PDF, TXT, Markdown, DOCX
+    
+    **Parameters:**
+    - `file`: Document file to upload
+    - `collection`: Collection name to store the document in
+    - `chunk_size`: Chunk size in characters (default: 1000)
+    - `chunk_overlap`: Chunk overlap in characters (default: 200)
+    - `chunker_type`: Type of chunker (character, word, sentence, paragraph, recursive)
+    
+    **Returns:**
+    - Task response with task_id (use this to check processing status via Tasks API)
+    """
+)
 async def upload_document(
     file: UploadFile,
     collection: str,
@@ -151,7 +174,21 @@ async def upload_document(
         )
 
 
-@router.get("/list/{collection}", response_model=DocumentListResponse)
+@router.get(
+    "/list/{collection}", 
+    response_model=DocumentListResponse,
+    status_code=200,
+    summary="List documents in a collection",
+    description="""
+    Retrieve a list of all documents in a specific collection.
+    
+    **Parameters:**
+    - `collection`: Name of the collection
+    
+    **Returns:**
+    - List of documents with metadata (filename, document_id, chunk_count)
+    """
+)
 async def list_documents(
     collection: str,
     storage_manager = Depends(get_storage_manager)
@@ -202,7 +239,24 @@ async def list_documents(
         )
 
 
-@router.delete("/{collection}/{filename}", response_model=SuccessResponse)
+@router.delete(
+    "/{collection}/{filename}", 
+    response_model=SuccessResponse,
+    status_code=200,
+    summary="Delete a document",
+    description="""
+    Delete a document and all its associated chunks from the vector store.
+    
+    **Warning:** This action is irreversible and will remove the document and all its embeddings.
+    
+    **Parameters:**
+    - `collection`: Collection name
+    - `filename`: Document filename to delete
+    
+    **Returns:**
+    - Success response confirming deletion
+    """
+)
 async def delete_document(
     collection: str,
     filename: str,
@@ -260,7 +314,21 @@ async def delete_document(
         )
 
 
-@router.get("/download/{collection}/{filename}")
+@router.get(
+    "/download/{collection}/{filename}",
+    status_code=200,
+    summary="Download a document",
+    description="""
+    Download the original document file from storage.
+    
+    **Parameters:**
+    - `collection`: Collection name
+    - `filename`: Document filename to download
+    
+    **Returns:**
+    - File response with the document content
+    """
+)
 async def download_document(
     collection: str,
     filename: str,
