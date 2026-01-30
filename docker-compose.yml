@@ -1,11 +1,29 @@
 version: '3.8'
 
 services:
-  # RAG Application
-  rag-app:
+  # Frontend Application
+  frontend:
     build:
-      context: ../..
-      dockerfile: deployments/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: development
+    container_name: rag-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - rag-network
+    restart: unless-stopped
+
+  # Backend API Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
       target: development
     container_name: rag-app
     ports:
@@ -18,9 +36,9 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
-      - ../../src:/app/src:ro
-      - ../../data:/app/data
-      - ../../logs:/app/logs
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
       qdrant:
         condition: service_healthy
@@ -95,8 +113,8 @@ services:
   # Celery Worker
   celery-worker:
     build:
-      context: ../..
-      dockerfile: deployments/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       target: development
     container_name: rag-celery-worker
     command: celery -A src.tasks.celery_app worker --loglevel=info --queues=documents,embeddings --concurrency=4
@@ -108,10 +126,12 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
-      - ../../src:/app/src:ro
-      - ../../data:/app/data
-      - ../../logs:/app/logs
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
+      backend:
+        condition: service_started
       qdrant:
         condition: service_healthy
       redis:
@@ -119,44 +139,6 @@ services:
     networks:
       - rag-network
     restart: unless-stopped
-
-  # Prometheus (Monitoring)
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: rag-prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-    networks:
-      - rag-network
-    restart: unless-stopped
-    profiles:
-      - monitoring
-
-  # Grafana (Visualization)
-  grafana:
-    image: grafana/grafana:latest
-    container_name: rag-grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    depends_on:
-      - prometheus
-    networks:
-      - rag-network
-    restart: unless-stopped
-    profiles:
-      - monitoring
 
 networks:
   rag-network:
@@ -168,8 +150,4 @@ volumes:
   ollama_data:
     driver: local
   redis_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
     driver: local

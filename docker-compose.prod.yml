@@ -1,11 +1,35 @@
 version: '3.8'
 
 services:
-  # RAG Application (Production)
-  rag-app:
+  # Frontend Application (Production)
+  frontend:
     build:
-      context: ../..
-      dockerfile: deployments/docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+    container_name: rag-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - rag-network
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Backend API Application (Production)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
       target: production
     container_name: rag-app-prod
     ports:
@@ -15,6 +39,8 @@ services:
       - APP_DEBUG=False
       - QDRANT_URL=http://qdrant:6333
       - OLLAMA_URL=http://ollama:11434
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - rag_documents:/app/data/documents
       - rag_models:/app/data/models
@@ -25,6 +51,8 @@ services:
         condition: service_healthy
       ollama:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - rag-network
     restart: always
@@ -46,7 +74,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - qdrant_data_prod:/qdrant/storage
+      - qdrant_data:/qdrant/storage
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
       - QDRANT__LOG_LEVEL=INFO
@@ -74,7 +102,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data_prod:/root/.ollama
+      - ollama_data:/root/.ollama
     environment:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_NUM_PARALLEL=4
@@ -97,18 +125,85 @@ services:
       #         count: 1
       #         capabilities: [gpu]
 
-  # Nginx Reverse Proxy (Optional)
+  # Redis (Task Queue Broker) - Production
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  # Celery Worker (Production)
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: rag-celery-worker-prod
+    command: celery -A src.tasks.celery_app worker --loglevel=info --queues=documents,embeddings --concurrency=4 --max-tasks-per-child=1000
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=False
+      - QDRANT_URL=http://qdrant:6333
+      - OLLAMA_URL=http://ollama:11434
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - rag_documents:/app/data/documents
+      - rag_models:/app/data/models
+      - rag_cache:/app/data/cache
+      - rag_logs:/app/logs
+    depends_on:
+      backend:
+        condition: service_started
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rag-network
+    restart: always
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+  # Nginx Reverse Proxy (Optional - for custom routing)
   nginx:
     image: nginx:alpine
     container_name: rag-nginx
     ports:
-      - "80:80"
+      - "8080:80"
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - rag-app
+      - frontend
+      - backend
     networks:
       - rag-network
     restart: always
@@ -123,7 +218,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data_prod:/prometheus
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -146,7 +241,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - grafana_data_prod:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-change_this}
@@ -174,51 +269,21 @@ networks:
         - subnet: 172.28.0.0/16
 
 volumes:
-  qdrant_data_prod:
+  qdrant_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/qdrant
-  ollama_data_prod:
+  ollama_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/ollama
-  prometheus_data_prod:
+  redis_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/prometheus
-  grafana_data_prod:
+  prometheus_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/grafana
+  grafana_data:
+    driver: local
   rag_documents:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/rag/documents
   rag_models:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/rag/models
   rag_cache:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/rag/cache
   rag_logs:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /var/lib/rag/logs

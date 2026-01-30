@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for RAG System
+# Multi-stage Dockerfile for Backend (RAG System API)
 
 # Stage 1: Base image with Python
 FROM python:3.11-slim as base
@@ -41,6 +41,9 @@ COPY . .
 
 # Set up Python path
 ENV PYTHONPATH=/app/src
+
+# Create directories
+RUN mkdir -p /app/data/documents /app/data/models /app/data/cache /app/logs
 
 # Default command for development
 CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

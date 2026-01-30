@@ -1,11 +1,12 @@
 """
 FastAPI application entry point.
 """
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.core.logging import configure_logging, get_logger
@@ -55,6 +56,21 @@ app.include_router(documents.router, prefix="/api/v1")
 app.include_router(query.router, prefix="/api/v1")
 app.include_router(collections.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
+
+# Mount static files for frontend (if frontend/dist exists)
+frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    # Mount assets directory
+    assets_dir = frontend_dist / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+    
+    # Serve vite.svg if it exists
+    vite_svg = frontend_dist / "vite.svg"
+    if vite_svg.exists():
+        @app.get("/vite.svg")
+        async def serve_vite_svg():
+            return FileResponse(str(vite_svg))
 
 
 @app.on_event("startup")
@@ -109,11 +125,17 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 @app.get("/", tags=["Root"])
 async def root():
     """
-    Root endpoint with API information.
+    Root endpoint - serves frontend if available, otherwise returns API info.
     
     Returns:
-        API metadata
+        Frontend index.html or API metadata
     """
+    # Try to serve frontend index.html if it exists
+    frontend_index = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+    if frontend_index.exists():
+        return FileResponse(str(frontend_index))
+    
+    # Fallback to API info if frontend not available
     return {
         "name": config.app.app_name,
         "version": config.app.api_version,
@@ -121,6 +143,24 @@ async def root():
         "docs": "/docs",
         "health": "/health"
     }
+
+# Catch-all route for SPA routing (must be last)
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str, request: Request):
+    """
+    Catch-all route for SPA routing.
+    Serves index.html for non-API routes.
+    """
+    # Don't interfere with API routes
+    if full_path.startswith("api/") or full_path in ["docs", "redoc", "openapi.json", "health"]:
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    
+    # Serve frontend index.html for SPA routing
+    frontend_index = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+    if frontend_index.exists():
+        return FileResponse(str(frontend_index))
+    
+    return JSONResponse(status_code=404, content={"detail": "Not found"})
 
 
 if __name__ == "__main__":
