@@ -10,11 +10,23 @@ set PROJECT_ROOT=%SCRIPT_DIR%..
 REM Change to project root
 cd /d "%PROJECT_ROOT%"
 
-REM Activate virtual environment if it exists
-if exist "venv\Scripts\activate.bat" (
-    call venv\Scripts\activate.bat
-) else if exist ".venv\Scripts\activate.bat" (
-    call .venv\Scripts\activate.bat
+REM Try to activate conda environment first, then venv
+where conda >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    conda env list | findstr /C:"simple-rag-system" >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo Activating conda environment: simple-rag-system
+        call conda activate simple-rag-system
+    )
+)
+
+REM Activate virtual environment if conda not available or not found
+if "%CONDA_DEFAULT_ENV%"=="" (
+    if exist "venv\Scripts\activate.bat" (
+        call venv\Scripts\activate.bat
+    ) else if exist ".venv\Scripts\activate.bat" (
+        call .venv\Scripts\activate.bat
+    )
 )
 
 REM Set environment variables if not set

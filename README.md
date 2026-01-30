@@ -47,7 +47,16 @@ cd simple-rag-system
 
 2. **Set up environment variables**:
 ```bash
-cp .env.example .env
+# Windows
+copy env.example .env
+
+# Linux/Mac
+cp env.example .env
+
+# Or use the setup script
+scripts\setup_env.bat  # Windows
+./scripts/setup_env.sh  # Linux/Mac
+
 # Edit .env with your configuration
 ```
 
@@ -67,6 +76,23 @@ docker-compose logs -f rag-app
 - Qdrant Dashboard: http://localhost:6333/dashboard
 
 ### Manual Installation (Development)
+
+#### Option A: Using Conda (Recommended for Data Science/ML workflows)
+
+1. **Create conda environment**:
+```bash
+conda env create -f environment.yml
+conda activate simple-rag-system
+```
+
+2. **Install dev dependencies (optional)**:
+```bash
+pip install -r requirements-dev.txt
+```
+
+See [CONDA_SETUP.md](CONDA_SETUP.md) for detailed conda setup instructions.
+
+#### Option B: Using venv (Python virtual environment)
 
 1. **Create virtual environment**:
 ```bash
@@ -201,7 +227,10 @@ docker-compose -f deployments/docker/docker-compose.prod.yml up -d
 
 ### Environment Variables
 
-See `.env.example` for all available configuration options.
+See `env.example` for all available configuration options. For detailed setup instructions:
+- [QUICK_START.md](QUICK_START.md) - Quick start guide
+- [LOCAL_SETUP.md](LOCAL_SETUP.md) - Detailed local setup
+- [CONDA_SETUP.md](CONDA_SETUP.md) - Conda-specific setup guide
 
 ## Monitoring
 

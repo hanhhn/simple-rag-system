@@ -137,15 +137,16 @@ class SecurityConfig(BaseSettings):
 
     jwt_secret_key: str = Field(
         default="change-this-secret-key-in-production",
-        description="JWT secret key"
+        description="JWT secret key",
+        alias="JWT_SECRET_KEY"
     )
-    jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm")
-    jwt_expiration_hours: int = Field(default=24, ge=1, description="JWT token expiration in hours")
-    rate_limit_enabled: bool = Field(default=True, description="Enable rate limiting")
-    rate_limit_requests: int = Field(default=100, ge=1, description="Rate limit requests per minute")
-    rate_limit_window: int = Field(default=60, ge=1, description="Rate limit window in seconds")
+    jwt_algorithm: str = Field(default="HS256", description="JWT signing algorithm", alias="JWT_ALGORITHM")
+    jwt_expiration_hours: int = Field(default=24, ge=1, description="JWT token expiration in hours", alias="JWT_EXPIRATION_HOURS")
+    rate_limit_enabled: bool = Field(default=True, description="Enable rate limiting", alias="RATE_LIMIT_ENABLED")
+    rate_limit_requests: int = Field(default=100, ge=1, description="Rate limit requests per minute", alias="RATE_LIMIT_REQUESTS")
+    rate_limit_window: int = Field(default=60, ge=1, description="Rate limit window in seconds", alias="RATE_LIMIT_WINDOW")
     
-    model_config = SettingsConfigDict(env_prefix="JWT_" if key.startswith("jwt") else "", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
 
 class CeleryConfig(BaseSettings):

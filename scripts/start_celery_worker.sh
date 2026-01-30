@@ -10,11 +10,22 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 # Change to project root
 cd "$PROJECT_ROOT"
 
-# Activate virtual environment if it exists
-if [ -d "venv" ]; then
-    source venv/bin/activate
-elif [ -d ".venv" ]; then
-    source .venv/bin/activate
+# Try to activate conda environment first, then venv
+if command -v conda &> /dev/null; then
+    if conda env list | grep -q "simple-rag-system"; then
+        echo "Activating conda environment: simple-rag-system"
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate simple-rag-system
+    fi
+fi
+
+# Activate virtual environment if conda not available or not activated
+if [ -z "$CONDA_DEFAULT_ENV" ]; then
+    if [ -d "venv" ]; then
+        source venv/bin/activate
+    elif [ -d ".venv" ]; then
+        source .venv/bin/activate
+    fi
 fi
 
 # Set environment variables if not set
