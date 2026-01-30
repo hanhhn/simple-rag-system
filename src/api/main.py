@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from src.core.logging import configure_logging, get_logger
 from src.core.config import get_config
-from src.api.routes import health, documents, query, collections, tasks
+from src.api.routes import health, documents, query, collections, tasks, nq_documents
 from src.api.middleware import logging as logging_middleware
 from src.api.middleware import rate_limit as rate_limit_middleware
 
@@ -44,6 +44,10 @@ tags_metadata = [
         "description": "Monitor and manage background tasks (e.g., document processing tasks).",
     },
     {
+        "name": "Natural Questions",
+        "description": "Manage Natural Questions dataset. Bulk upload and crawl Google's Natural Questions dataset.",
+    },
+    {
         "name": "Root",
         "description": "Root endpoint and API information.",
     },
@@ -62,13 +66,14 @@ app = FastAPI(
     * **Collection Management**: Create and manage vector collections
     * **Document Processing**: Upload documents (PDF, TXT, MD, DOCX) with automatic chunking and embedding
     * **RAG Queries**: Query documents using semantic search with LLM-powered answer generation
+    * **Natural Questions**: Bulk upload and crawl Google's Natural Questions dataset
     * **Task Management**: Monitor background document processing tasks
     * **Health Monitoring**: Check system and service health status
     
     ## Getting Started
     
     1. Create a collection using the Collections API
-    2. Upload documents to the collection
+    2. Upload documents to the collection (or crawl Natural Questions dataset)
     3. Query the collection using natural language questions
     """,
     docs_url="/docs",
@@ -118,6 +123,7 @@ app.include_router(documents.router, prefix="/api/v1")
 app.include_router(query.router, prefix="/api/v1")
 app.include_router(collections.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(nq_documents.router, prefix="/api/v1")
 
 # Mount static files for frontend (if frontend/dist exists)
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
