@@ -82,7 +82,7 @@ export const api = {
   // Collections API
   collections: {
     list: async () => {
-      const response = await client.get<{ collections: CollectionInfo[] }>('/api/v1/collections/');
+      const response = await client.get<{ collections: CollectionInfo[] }>('/api/v1/collections');
       return response.data;
     },
 
@@ -120,13 +120,14 @@ export const api = {
       if (chunkOverlap) formData.append('chunk_overlap', chunkOverlap.toString());
       if (chunkerType) formData.append('chunker_type', chunkerType);
 
-      const response = await client.post<{ task_id: string; document_id: string; filename: string; collection: string; status: string; message: string }>(
-        '/api/v1/documents/upload',
+      // For FormData, axios automatically sets Content-Type with boundary
+      // Create a request without the default Content-Type header
+      const response = await axios.post<{ task_id: string; document_id: string; filename: string; collection: string; status: string; message: string }>(
+        `${API_BASE_URL}/api/v1/documents/upload`,
         formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          timeout: 30000,
+          // Axios will automatically set Content-Type with boundary for FormData
         }
       );
       return response.data;

@@ -30,7 +30,7 @@ router = APIRouter(prefix="/collections", tags=["Collections"])
 
 
 @router.post(
-    "/", 
+    "", 
     response_model=CollectionResponse,
     status_code=201,
     summary="Create a new collection",
@@ -126,7 +126,7 @@ async def create_collection(
 
 
 @router.get(
-    "/", 
+    "", 
     response_model=CollectionListResponse,
     status_code=200,
     summary="List all collections",

@@ -1,11 +1,10 @@
 """
 Document management endpoints.
 """
-import os
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
 
 from src.core.logging import get_logger
@@ -68,10 +67,10 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 )
 async def upload_document(
     file: UploadFile,
-    collection: str,
-    chunk_size: int | None = None,
-    chunk_overlap: int | None = None,
-    chunker_type: str = "sentence",
+    collection: str = Form(...),
+    chunk_size: int | None = Form(None),
+    chunk_overlap: int | None = Form(None),
+    chunker_type: str = Form("sentence"),
     storage_manager = Depends(get_storage_manager)
 ) -> DocumentUploadTaskResponse:
     """
@@ -94,8 +93,11 @@ async def upload_document(
     validator = DocumentValidator()
     
     try:
+        # Read file content first to get accurate file size
+        content = await file.read()
+        file_size = len(content)
+        
         # Validate file
-        file_size = os.path.getsize(file.file.name) if hasattr(file, 'file') else 0
         validator.validate_document(file.filename, file_size)
         
         logger.info(
@@ -104,9 +106,6 @@ async def upload_document(
             collection=collection,
             file_size=file_size
         )
-        
-        # Read file content
-        content = await file.read()
         
         # Save file to storage
         storage_path = storage_manager.save_file(content, file.filename, collection)

@@ -91,7 +91,7 @@ export function DocumentsPage() {
 
     try {
       setUploading(true);
-      const result = await api.documents.upload(uploadFile, uploadCollection);
+      const result = await api.documents.upload(uploadCollection, uploadFile);
       setUploadDialogOpen(false);
       setUploadFile(null);
       loadDocuments();
