@@ -253,6 +253,33 @@ Frontend sẽ chạy tại: http://localhost:5173
 - Hoặc chạy từ thư mục gốc với: `python -m src.api.main`
 - Kiểm tra Python version: `python --version` (cần Python 3.11+)
 
+### Lỗi: NumPy version incompatibility
+
+Nếu gặp lỗi `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x` khi import torch hoặc sentence-transformers:
+
+**Nguyên nhân:** `torch` và `sentence-transformers` được biên dịch với NumPy 1.x, nhưng môi trường đang có NumPy 2.x.
+
+**Giải pháp:**
+
+**Với Conda:**
+```bash
+conda activate simple-rag-system
+conda install "numpy<2" -y
+# Hoặc nếu conda không thay đổi được version
+pip install "numpy<2" --upgrade
+```
+
+**Với venv:**
+```bash
+# Kích hoạt virtual environment
+source venv/bin/activate  # hoặc venv\Scripts\activate trên Windows
+
+# Downgrade NumPy
+pip install "numpy<2" --upgrade
+```
+
+**Lưu ý:** File `requirements.txt`, `environment.yml` và `environment-dev.yml` đã được cấu hình với `numpy<2` để tránh lỗi này. Nếu bạn cài đặt từ các file này, lỗi sẽ không xảy ra.
+
 ### Debug mode
 
 Để bật debug mode, set trong `.env`:

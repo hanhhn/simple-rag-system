@@ -12,6 +12,7 @@ python-dotenv==1.0.0
 qdrant-client==1.7.0
 
 # Embeddings and ML
+numpy<2  # Required: torch and sentence-transformers are compiled against NumPy 1.x
 sentence-transformers==2.2.2
 torch==2.1.0
 transformers==4.35.0

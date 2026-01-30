@@ -169,4 +169,19 @@ conda activate simple-rag-system
 python -m src.api.main
 ```
 
+### Lỗi: NumPy version incompatibility
+
+Nếu gặp lỗi `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`:
+
+```bash
+# Với conda:
+conda activate simple-rag-system
+conda install "numpy<2" -y
+
+# Với venv:
+pip install "numpy<2" --upgrade
+```
+
+**Lưu ý:** File `requirements.txt` và `environment.yml` đã được cấu hình với `numpy<2` để tránh lỗi này.
+
 Xem [LOCAL_SETUP.md](LOCAL_SETUP.md) để biết chi tiết hơn.

@@ -211,6 +211,29 @@ conda env remove -n simple-rag-system
 conda env create -f environment.yml
 ```
 
+### Lỗi: NumPy version incompatibility
+
+Nếu gặp lỗi `A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x`:
+
+**Nguyên nhân:** `torch` và `sentence-transformers` được biên dịch với NumPy 1.x, nhưng môi trường đang có NumPy 2.x.
+
+**Giải pháp:**
+
+```bash
+# Kích hoạt môi trường
+conda activate simple-rag-system
+
+# Downgrade NumPy về version < 2
+conda install "numpy<2" -y
+
+# Hoặc nếu conda không thay đổi được version, dùng pip
+pip install "numpy<2" --upgrade
+
+# Sau đó restart server
+```
+
+**Lưu ý:** File `environment.yml` và `environment-dev.yml` đã được cấu hình với `numpy<2` để tránh lỗi này. Nếu bạn tạo môi trường mới từ các file này, lỗi sẽ không xảy ra.
+
 ## Lợi ích của Conda
 
 1. **Quản lý dependencies tốt hơn**: Conda quản lý cả Python packages và system dependencies
