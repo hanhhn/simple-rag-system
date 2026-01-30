@@ -158,7 +158,7 @@ export const api = {
       use_rag?: boolean;
       stream?: boolean;
     }) => {
-      const response = await client.post<QueryResponse>('/query/', params);
+      const response = await client.post<QueryResponse>('/api/v1/query', params);
       return response.data;
     },
 
@@ -170,7 +170,7 @@ export const api = {
       use_rag?: boolean;
       stream?: boolean;
     }) => {
-      const response = await client.post<QueryResponse>('/query/stream', params);
+      const response = await client.post<QueryResponse>('/api/v1/query/stream', params);
       return response.data;
     },
   },

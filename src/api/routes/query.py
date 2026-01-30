@@ -16,7 +16,7 @@ router = APIRouter(prefix="/query", tags=["Query"])
 
 
 @router.post(
-    "/", 
+    "", 
     response_model=QueryResponse,
     status_code=200,
     summary="Process a RAG query",
