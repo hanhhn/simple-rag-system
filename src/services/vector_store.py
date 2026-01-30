@@ -417,17 +417,45 @@ class VectorStore:
             CollectionNotFoundError: If collection doesn't exist
         """
         try:
-            info = self.client.get_collection(collection_name=collection_name)
+            # Use raw API call to avoid Pydantic validation issues with Qdrant client
+            response = httpx.get(
+                f"{self.url}/collections/{collection_name}",
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            result = data.get("result", {})
+            config = result.get("config", {})
+            params = config.get("params", {})
+            vectors = params.get("vectors", {})
+            
+            # Handle both dict and object formats
+            if isinstance(vectors, dict):
+                dimension = vectors.get("size")
+            else:
+                dimension = getattr(vectors, "size", None)
             
             return {
                 "name": collection_name,
-                "dimension": info.config.params.vectors.size,
-                "vector_count": info.points_count,
-                "status": info.status,
-                "optimizer_status": info.optimizer_status,
-                "indexed": info.indexed_vectors_count
+                "dimension": dimension,
+                "vector_count": result.get("points_count", 0),
+                "status": result.get("status", "unknown"),
+                "optimizer_status": result.get("optimizer_status", {}),
+                "indexed": result.get("indexed_vectors_count", 0)
             }
             
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise CollectionNotFoundError(
+                    f"Collection '{collection_name}' does not exist",
+                    details={"collection": collection_name}
+                )
+            logger.error("Failed to get collection info", collection=collection_name, error=str(e))
+            raise CollectionNotFoundError(
+                f"Collection '{collection_name}' not found: {str(e)}",
+                details={"collection": collection_name, "error": str(e)}
+            )
         except Exception as e:
             logger.error("Failed to get collection info", collection=collection_name, error=str(e))
             raise CollectionNotFoundError(

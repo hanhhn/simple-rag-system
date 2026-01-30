@@ -188,7 +188,7 @@ async def revoke_task(task_id: str) -> dict:
 
 
 @router.get(
-    "/", 
+    "", 
     response_model=TaskListResponse,
     status_code=200,
     summary="List active tasks",

@@ -41,11 +41,11 @@ services:
       - ./logs:/app/logs
     depends_on:
       qdrant:
-        condition: service_healthy
+        condition: service_started
       ollama:
         condition: service_started
       redis:
-        condition: service_healthy
+        condition: service_started
     networks:
       - rag-network
     restart: unless-stopped
@@ -62,10 +62,11 @@ services:
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - rag-network
     restart: unless-stopped
@@ -117,7 +118,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: rag-celery-worker
-    command: celery -A src.tasks.celery_app worker --loglevel=info --queues=documents,embeddings --concurrency=4
+    command: celery -A src.tasks.celery_app worker --pool=threads --loglevel=info --queues=documents,embeddings --concurrency=4
     environment:
       - APP_ENV=development
       - APP_DEBUG=True
@@ -125,17 +126,16 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_WORKER_POOL=threads
     volumes:
       - ./src:/app/src
       - ./data:/app/data
       - ./logs:/app/logs
     depends_on:
-      backend:
-        condition: service_started
       qdrant:
-        condition: service_healthy
+        condition: service_started
       redis:
-        condition: service_healthy
+        condition: service_started
     networks:
       - rag-network
     restart: unless-stopped

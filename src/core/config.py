@@ -217,6 +217,10 @@ class CeleryConfig(BaseSettings):
     task_soft_time_limit: int = Field(default=3000, ge=1, description="Task soft time limit in seconds")
     worker_prefetch_multiplier: int = Field(default=4, ge=1, description="Worker prefetch multiplier")
     worker_max_tasks_per_child: int = Field(default=1000, ge=1, description="Max tasks per worker child")
+    worker_pool: str = Field(
+        default="threads",
+        description="Worker pool type: 'prefork', 'threads', 'solo', or 'gevent' (use 'threads' or 'solo' for ML models)"
+    )
     
     model_config = SettingsConfigDict(
         env_prefix="CELERY_",

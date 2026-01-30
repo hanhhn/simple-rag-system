@@ -58,15 +58,35 @@ class EmbeddingService:
             enabled=use_cache
         )
         
-        # Load model
-        self.model = self._load_model(self.model_name)
+        # Lazy load model - don't load until first use
+        # This avoids issues with loading models in forked processes
+        self._model: Optional[EmbeddingModel] = None
         
         logger.info(
-            "Embedding service initialized",
+            "Embedding service initialized (lazy loading)",
             model=self.model_name,
-            use_cache=use_cache,
-            dimension=self.model.get_dimension()
+            use_cache=use_cache
         )
+    
+    @property
+    def model(self) -> EmbeddingModel:
+        """
+        Get the embedding model, loading it lazily if needed.
+        
+        This property ensures the model is only loaded when first accessed,
+        which is safer for multiprocessing contexts (e.g., Celery workers).
+        
+        Returns:
+            Initialized embedding model
+        """
+        if self._model is None:
+            self._model = self._load_model(self.model_name)
+            logger.info(
+                "Model loaded (lazy initialization)",
+                model=self.model_name,
+                dimension=self._model.get_dimension()
+            )
+        return self._model
     
     def _load_model(self, model_name: str) -> EmbeddingModel:
         """

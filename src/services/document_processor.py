@@ -10,6 +10,9 @@ from src.core.config import get_config
 from src.parsers.base import get_parser_factory
 from src.utils.text_chunker import Chunk, chunk_text
 
+# Import parsers to ensure they are registered
+import src.parsers  # noqa: F401
+
 
 logger = get_logger(__name__)
 

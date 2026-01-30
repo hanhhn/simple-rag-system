@@ -37,7 +37,13 @@ class StorageManager:
             storage_path: Base storage directory (uses config default if None)
         """
         config = get_config()
-        self.storage_path = Path(storage_path or config.storage.storage_path)
+        default_path = config.storage.storage_path if config.storage.storage_path else Path("./data/documents")
+        self.storage_path = Path(storage_path or default_path)
+        
+        # Ensure storage_path is not None
+        if not self.storage_path:
+            raise ValueError("Storage path cannot be None")
+        
         self.storage_path.mkdir(parents=True, exist_ok=True)
         
         logger.info("Storage manager initialized", storage_path=str(self.storage_path))
