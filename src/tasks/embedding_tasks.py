@@ -61,7 +61,7 @@ def generate_embeddings_task(
             filename=filename,
             task_id=self.request.id
         )
-        
+
         if not chunks_data:
             logger.warning("No chunks to process", task_id=self.request.id)
             return {
@@ -71,20 +71,83 @@ def generate_embeddings_task(
                 "chunk_count": 0,
                 "vectors_inserted": 0
             }
-        
+
+        # Validate chunks data
+        for i, chunk in enumerate(chunks_data):
+            if not isinstance(chunk, dict):
+                logger.error(
+                    f"Invalid chunk at index {i}: not a dictionary",
+                    task_id=self.request.id
+                )
+                raise EmbeddingError(f"Chunk at index {i} is not a dictionary")
+            if "text" not in chunk or not chunk["text"]:
+                logger.error(
+                    f"Invalid chunk at index {i}: missing or empty text",
+                    task_id=self.request.id
+                )
+                raise EmbeddingError(f"Chunk at index {i} has missing or empty text")
+
         # Initialize services
-        embedding_service = EmbeddingService(model_name=model_name)
-        vector_store = VectorStore()
-        
+        try:
+            embedding_service = EmbeddingService(model_name=model_name)
+            vector_store = VectorStore()
+        except Exception as e:
+            logger.error(
+                "Failed to initialize services",
+                error=str(e),
+                error_type=type(e).__name__,
+                task_id=self.request.id
+            )
+            raise EmbeddingError(f"Failed to initialize services: {str(e)}")
+
         # Extract chunk texts
         chunk_texts = [chunk["text"] for chunk in chunks_data]
-        
-        # Generate embeddings
-        embeddings = embedding_service.generate_embeddings(
-            texts=chunk_texts,
-            batch_size=batch_size
-        )
-        
+
+        # Validate that we have text to embed
+        if not chunk_texts or all(not text.strip() for text in chunk_texts):
+            logger.error(
+                "No valid text content found in chunks",
+                chunk_count=len(chunk_texts),
+                task_id=self.request.id
+            )
+            raise EmbeddingError("No valid text content found in chunks")
+
+        # Generate embeddings with additional error handling
+        try:
+            embeddings = embedding_service.generate_embeddings(
+                texts=chunk_texts,
+                batch_size=batch_size
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to generate embeddings",
+                error=str(e),
+                error_type=type(e).__name__,
+                task_id=self.request.id,
+                exc_info=True
+            )
+            raise EmbeddingError(f"Failed to generate embeddings: {str(e)}")
+
+        # Validate embeddings output
+        if not embeddings:
+            logger.error(
+                "Embeddings generation returned empty list",
+                chunk_count=len(chunk_texts),
+                task_id=self.request.id
+            )
+            raise EmbeddingError("Embeddings generation returned empty list")
+
+        if len(embeddings) != len(chunk_texts):
+            logger.error(
+                "Embeddings count mismatch",
+                expected=len(chunk_texts),
+                actual=len(embeddings),
+                task_id=self.request.id
+            )
+            raise EmbeddingError(
+                f"Embeddings count mismatch: expected {len(chunk_texts)}, got {len(embeddings)}"
+            )
+
         logger.info(
             "Embeddings generated",
             collection=collection,
@@ -149,9 +212,11 @@ def generate_embeddings_task(
             collection=collection,
             chunk_count=len(chunks_data) if chunks_data else 0,
             error=str(e),
-            task_id=self.request.id
+            error_type=type(e).__name__,
+            task_id=self.request.id,
+            exc_info=True
         )
-        # Don't retry on service errors
+        # Don't retry on service errors - these are usually configuration or data issues
         raise
     except Exception as e:
         logger.error(
@@ -159,11 +224,26 @@ def generate_embeddings_task(
             collection=collection,
             chunk_count=len(chunks_data) if chunks_data else 0,
             error=str(e),
+            error_type=type(e).__name__,
             task_id=self.request.id,
             exc_info=True
         )
-        # Retry on unexpected errors
-        raise self.retry(exc=e)
+        # Retry on unexpected errors (e.g., network issues)
+        if self.request.retries < self.max_retries:
+            logger.info(
+                "Retrying embedding generation task",
+                attempt=self.request.retries + 1,
+                max_retries=self.max_retries,
+                task_id=self.request.id
+            )
+            raise self.retry(exc=e, countdown=self.default_retry_delay * (2 ** self.request.retries))
+        else:
+            logger.error(
+                "Max retries exceeded for embedding generation task",
+                collection=collection,
+                task_id=self.request.id
+            )
+            raise
 
 
 @celery_app.task(

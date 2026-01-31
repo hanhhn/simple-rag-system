@@ -2,6 +2,7 @@
 Storage manager for file operations.
 """
 import shutil
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -94,36 +95,84 @@ class StorageManager:
             >>> manager = StorageManager()
             >>> path = manager.save_file(b"content", "doc.txt", "my_collection")
         """
+        start_time = time.time()
+        
         try:
+            logger.info(
+                "Starting file save",
+                filename=filename,
+                collection=collection_name,
+                size_bytes=len(content),
+                size_mb=f"{len(content) / (1024 * 1024):.2f}",
+                overwrite=overwrite
+            )
+            
             collection_path = self._get_collection_path(collection_name)
             filepath = collection_path / filename
             
             # Check if file exists
+            check_start = time.time()
             if filepath.exists() and not overwrite:
+                elapsed = time.time() - start_time
+                logger.warning(
+                    "File already exists",
+                    filepath=str(filepath),
+                    elapsed_time=f"{elapsed:.4f}s"
+                )
                 raise FileStorageError(
                     f"File already exists: {filename}",
                     details={"filename": filename, "collection": collection_name}
                 )
+            check_elapsed = time.time() - check_start
             
             # Save file
+            write_start = time.time()
             filepath.write_bytes(content)
+            write_elapsed = time.time() - write_start
+            
+            total_elapsed = time.time() - start_time
             
             logger.info(
                 "File saved successfully",
                 filepath=str(filepath),
+                filename=filename,
+                collection=collection_name,
                 size_bytes=len(content),
-                collection=collection_name
+                size_mb=f"{len(content) / (1024 * 1024):.2f}",
+                check_time=f"{check_elapsed:.6f}s",
+                write_time=f"{write_elapsed:.4f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                write_speed=f"{len(content) / write_elapsed / (1024 * 1024):.2f} MB/s" if write_elapsed > 0 else "0"
             )
             
             return str(filepath)
             
         except FileStorageError:
+            elapsed = time.time() - start_time
+            logger.error(
+                "File save failed (FileStorageError)",
+                filename=filename,
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise
         except Exception as e:
-            logger.error("Failed to save file", filename=filename, error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to save file",
+                filename=filename,
+                collection=collection_name,
+                error=str(e),
+                error_type=type(e).__name__,
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise FileStorageError(
                 f"Failed to save file '{filename}': {str(e)}",
-                details={"filename": filename, "error": str(e)}
+                details={
+                    "filename": filename,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def get_file(self, filename: str, collection_name: str) -> bytes:

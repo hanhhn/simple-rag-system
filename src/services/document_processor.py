@@ -1,6 +1,7 @@
 """
 Document processing service.
 """
+import time
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -75,36 +76,82 @@ class DocumentProcessor:
             >>> processor = DocumentProcessor()
             >>> text = processor.parse_document("document.pdf")
         """
+        start_time = time.time()
+        filepath_obj = Path(filepath)
+        
         try:
-            logger.info("Parsing document", filepath=str(filepath))
+            file_size = filepath_obj.stat().st_size if filepath_obj.exists() else 0
+            file_ext = filepath_obj.suffix.lower()
+            
+            logger.info(
+                "Starting document parsing",
+                filepath=str(filepath),
+                file_size_bytes=file_size,
+                file_size_mb=f"{file_size / (1024 * 1024):.2f}",
+                file_extension=file_ext
+            )
             
             # Get appropriate parser
+            parser_start = time.time()
             parser = self.parser_factory.get_parser(filepath)
+            parser_get_elapsed = time.time() - parser_start
+            logger.debug("Parser selected", parser_type=type(parser).__name__, elapsed=f"{parser_get_elapsed:.6f}s")
             
             # Parse document
+            parse_start = time.time()
             text = parser.parse(filepath)
+            parse_elapsed = time.time() - parse_start
             
             if not text:
+                elapsed = time.time() - start_time
+                logger.warning(
+                    "Document contains no text content",
+                    filepath=str(filepath),
+                    elapsed_time=f"{elapsed:.4f}s"
+                )
                 raise DocumentProcessingError(
                     "Document contains no text content",
                     details={"filepath": str(filepath)}
                 )
             
+            total_elapsed = time.time() - start_time
+            
             logger.info(
                 "Document parsed successfully",
                 filepath=str(filepath),
-                text_length=len(text)
+                text_length=len(text),
+                parse_time=f"{parse_elapsed:.4f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                chars_per_second=f"{len(text) / parse_elapsed:.0f}" if parse_elapsed > 0 else "0"
             )
             
             return text
             
         except DocumentProcessingError:
+            elapsed = time.time() - start_time
+            logger.error(
+                "Document parsing failed (DocumentProcessingError)",
+                filepath=str(filepath),
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise
         except Exception as e:
-            logger.error("Failed to parse document", filepath=str(filepath), error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to parse document",
+                filepath=str(filepath),
+                error=str(e),
+                error_type=type(e).__name__,
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise DocumentProcessingError(
                 f"Failed to parse document: {str(e)}",
-                details={"filepath": str(filepath), "error": str(e)}
+                details={
+                    "filepath": str(filepath),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def chunk_document(
@@ -126,40 +173,70 @@ class DocumentProcessor:
             >>> processor = DocumentProcessor()
             >>> chunks = processor.chunk_document(document_text)
         """
+        start_time = time.time()
+        
         try:
-            logger.debug(
-                "Chunking document",
+            logger.info(
+                "Starting document chunking",
                 text_length=len(text),
                 chunk_size=self.chunk_size,
-                chunk_overlap=self.chunk_overlap
+                chunk_overlap=self.chunk_overlap,
+                chunker_type=self.chunker_type
             )
             
             # Chunk text
+            chunk_start = time.time()
             chunks = chunk_text(
                 text,
                 chunker_type=self.chunker_type,
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap
             )
+            chunk_elapsed = time.time() - chunk_start
             
             # Add metadata to chunks
+            metadata_start = time.time()
             if metadata:
                 for chunk in chunks:
                     chunk.metadata.update(metadata)
+            metadata_elapsed = time.time() - metadata_start
+            
+            total_elapsed = time.time() - start_time
+            
+            avg_chunk_size = sum(len(c.text) for c in chunks) // len(chunks) if chunks else 0
+            min_chunk_size = min((len(c.text) for c in chunks), default=0)
+            max_chunk_size = max((len(c.text) for c in chunks), default=0)
             
             logger.info(
                 "Document chunked successfully",
                 chunk_count=len(chunks),
-                avg_chunk_size=sum(len(c.text) for c in chunks) // len(chunks) if chunks else 0
+                avg_chunk_size=avg_chunk_size,
+                min_chunk_size=min_chunk_size,
+                max_chunk_size=max_chunk_size,
+                chunk_time=f"{chunk_elapsed:.4f}s",
+                metadata_time=f"{metadata_elapsed:.6f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                chunks_per_second=f"{len(chunks) / chunk_elapsed:.2f}" if chunk_elapsed > 0 else "0"
             )
             
             return chunks
             
         except Exception as e:
-            logger.error("Failed to chunk document", error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to chunk document",
+                error=str(e),
+                error_type=type(e).__name__,
+                text_length=len(text),
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise DocumentProcessingError(
                 f"Failed to chunk document: {str(e)}",
-                details={"error": str(e)}
+                details={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def process_document(
@@ -182,12 +259,24 @@ class DocumentProcessor:
             >>> result = processor.process_document("document.pdf")
             >>> print(result["chunks"])  # List of chunks
         """
+        start_time = time.time()
+        
         try:
+            logger.info(
+                "Starting end-to-end document processing",
+                filepath=str(filepath),
+                has_metadata=metadata is not None
+            )
+            
             # Parse document
+            parse_start = time.time()
             text = self.parse_document(filepath)
+            parse_elapsed = time.time() - parse_start
             
             # Chunk document
+            chunk_start = time.time()
             chunks = self.chunk_document(text, metadata)
+            chunk_elapsed = time.time() - chunk_start
             
             # Prepare result
             result = {
@@ -199,21 +288,46 @@ class DocumentProcessor:
                 "metadata": metadata or {}
             }
             
+            total_elapsed = time.time() - start_time
+            
             logger.info(
                 "Document processed successfully",
                 filepath=str(filepath),
-                chunk_count=len(chunks)
+                chunk_count=len(chunks),
+                text_length=len(text),
+                parse_time=f"{parse_elapsed:.4f}s",
+                chunk_time=f"{chunk_elapsed:.4f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                processing_rate=f"{len(text) / total_elapsed:.0f} chars/s" if total_elapsed > 0 else "0"
             )
             
             return result
             
         except DocumentProcessingError:
+            elapsed = time.time() - start_time
+            logger.error(
+                "Document processing failed (DocumentProcessingError)",
+                filepath=str(filepath),
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise
         except Exception as e:
-            logger.error("Failed to process document", filepath=str(filepath), error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to process document",
+                filepath=str(filepath),
+                error=str(e),
+                error_type=type(e).__name__,
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise DocumentProcessingError(
                 f"Failed to process document: {str(e)}",
-                details={"filepath": str(filepath), "error": str(e)}
+                details={
+                    "filepath": str(filepath),
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def get_supported_formats(self) -> List[str]:

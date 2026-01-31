@@ -118,7 +118,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: rag-celery-worker
-    command: celery -A src.tasks.celery_app worker --pool=threads --loglevel=info --queues=documents,embeddings --concurrency=4
+    command: celery -A src.tasks.celery_app worker --pool=solo --loglevel=info --queues=documents,embeddings
     environment:
       - APP_ENV=development
       - APP_DEBUG=True
@@ -126,7 +126,7 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-      - CELERY_WORKER_POOL=threads
+      - CELERY_WORKER_POOL=solo
     volumes:
       - ./src:/app/src
       - ./data:/app/data

@@ -109,7 +109,8 @@ async def get_task_status(task_id: str) -> TaskResponse:
         elif status == TaskStatus.STARTED:
             if isinstance(task_info, dict) and "progress" in task_info:
                 response_data["progress"] = task_info["progress"]
-            response_data["started_at"] = task.date_started
+            # date_started might not be available in all Celery versions
+            response_data["started_at"] = getattr(task, "date_started", None)
         
         # Get task metadata if available
         if hasattr(task, "request") and task.request:

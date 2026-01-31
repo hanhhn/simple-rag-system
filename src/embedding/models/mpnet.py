@@ -38,7 +38,8 @@ class MPNetModel(EmbeddingModel):
         self,
         model_name: str = DEFAULT_MODEL,
         cache_dir: str | None = None,
-        device: str | None = None
+        device: str | None = None,
+        lazy_load: bool = True
     ) -> None:
         """
         Initialize MPNet model.
@@ -47,14 +48,47 @@ class MPNetModel(EmbeddingModel):
             model_name: Model name or path (default: all-mpnet-base-v2)
             cache_dir: Directory to cache models
             device: Device to load model on (cpu/cuda)
+            lazy_load: If True, load model on first use (safer for multiprocessing)
         """
         super().__init__(model_name=model_name, dimension=self.DIMENSION)
-        
+
         self.loader = ModelLoader(cache_dir=cache_dir, device=device)
-        self.model = self.loader.load_model(model_name)
-        
-        logger.info("MPNet model initialized", model=model_name, dimension=self.DIMENSION)
-    
+        self._model_name = model_name
+
+        if lazy_load:
+            # Lazy loading - safer for multiprocessing (Celery workers)
+            self.model = None
+            logger.info(
+                "MPNet model initialized (lazy loading)",
+                model=model_name,
+                dimension=self.DIMENSION
+            )
+        else:
+            # Eager loading
+            self.model = self.loader.load_model(model_name)
+            logger.info("MPNet model initialized", model=model_name, dimension=self.DIMENSION)
+
+    @property
+    def _loaded_model(self):
+        """Lazy load of model when first accessed."""
+        logger.debug("Accessing _loaded_model property", model=self._model_name, has_model=self.model is not None)
+
+        if self.model is None:
+            logger.info("Loading model on first access", model=self._model_name)
+            try:
+                self.model = self.loader.load_model(self._model_name)
+                logger.info("Model loaded successfully", model=self._model_name)
+            except Exception:
+                logger.error(
+                    "Failed to load model in _loaded_model property",
+                    model=self._model_name,
+                    exc_info=True
+                )
+                raise
+
+        logger.debug("Returning model from _loaded_model property", model=self._model_name)
+        return self.model
+
     def encode(self, texts: List[str], batch_size: int = 32) -> List[List[float]]:
         """
         Encode multiple texts into embeddings.
@@ -76,36 +110,69 @@ class MPNetModel(EmbeddingModel):
         """
         if not texts:
             return []
-        
+
+        logger.info(
+            "Starting encode operation",
+            count=len(texts),
+            batch_size=batch_size
+        )
+
         try:
             logger.debug(
                 "Encoding texts",
                 count=len(texts),
                 batch_size=batch_size
             )
-            
-            # Encode texts
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
-                show_progress_bar=False,
-                convert_to_numpy=True,
-                normalize_embeddings=True
-            )
-            
-            # Convert to list format
-            result = [embedding.tolist() for embedding in embeddings]
-            
-            logger.info(
-                "Successfully encoded texts",
-                count=len(texts),
-                dimension=self.DIMENSION
-            )
-            
-            return result
-            
+
+            # Encode texts using lazy-loaded model
+            model = self._loaded_model
+            logger.debug("Model loaded, starting encoding")
+
+            try:
+                embeddings = model.encode(
+                    texts,
+                    batch_size=batch_size,
+                    show_progress_bar=False,
+                    convert_to_numpy=True,
+                    normalize_embeddings=True
+                )
+                logger.debug("Encoding completed, converting to list")
+
+                # Convert to list format
+                result = [embedding.tolist() for embedding in embeddings]
+
+                logger.info(
+                    "Successfully encoded texts",
+                    count=len(texts),
+                    dimension=self.DIMENSION
+                )
+
+                return result
+
+            except Exception as encode_error:
+                logger.error(
+                    "Model.encode() failed",
+                    error=str(encode_error),
+                    error_type=type(encode_error).__name__,
+                    text_count=len(texts),
+                    batch_size=batch_size,
+                    exc_info=True
+                )
+                raise EmbeddingGenerationError(
+                    f"Failed to generate embeddings: {str(encode_error)}",
+                    details={
+                        "error": str(encode_error),
+                        "error_type": type(encode_error).__name__,
+                        "text_count": len(texts)
+                    }
+                )
         except Exception as e:
-            logger.error("Failed to encode texts", error=str(e), count=len(texts))
+            logger.error(
+                "Failed to encode texts",
+                error=str(e),
+                error_type=type(e).__name__,
+                count=len(texts)
+            )
             raise EmbeddingGenerationError(
                 f"Failed to generate embeddings: {str(e)}",
                 details={"error": str(e), "text_count": len(texts)}

@@ -67,8 +67,13 @@ class EmbeddingConfig(BaseSettings):
     batch_size: int = Field(default=32, ge=1, description="Batch size for embedding generation")
     cache_enabled: bool = Field(default=True, description="Enable embedding cache")
     device: Literal["cpu", "cuda"] = Field(default="cpu", description="Device for model inference")
-    
-    model_config = SettingsConfigDict(env_prefix="EMBEDDING_", env_file=".env", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_prefix="EMBEDDING_",
+        env_file=".env",
+        extra="ignore",
+        protected_namespaces=()
+    )
 
 
 class DocumentConfig(BaseSettings):
@@ -152,8 +157,13 @@ class StorageConfig(BaseSettings):
         default=Path("./logs"),
         description="Path to log directory"
     )
-    
-    model_config = SettingsConfigDict(env_prefix="STORAGE_", env_file=".env", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_prefix="STORAGE_",
+        env_file=".env",
+        extra="ignore",
+        protected_namespaces=()
+    )
 
     def model_post_init(self, __context: object) -> None:
         """Create directories if they don't exist."""
@@ -218,8 +228,8 @@ class CeleryConfig(BaseSettings):
     worker_prefetch_multiplier: int = Field(default=4, ge=1, description="Worker prefetch multiplier")
     worker_max_tasks_per_child: int = Field(default=1000, ge=1, description="Max tasks per worker child")
     worker_pool: str = Field(
-        default="threads",
-        description="Worker pool type: 'prefork', 'threads', 'solo', or 'gevent' (use 'threads' or 'solo' for ML models)"
+        default="solo",
+        description="Worker pool type: 'prefork', 'threads', 'solo', or 'gevent' (use 'solo' for ML models to avoid SIGSEGV)"
     )
     
     model_config = SettingsConfigDict(

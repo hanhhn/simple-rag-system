@@ -1,6 +1,7 @@
 """
 LLM service for generating responses.
 """
+import time
 from typing import List, Dict, Optional
 
 from src.core.logging import get_logger
@@ -82,29 +83,55 @@ class LLMService:
             >>> service = LLMService()
             >>> response = service.generate("Hello!")
         """
+        start_time = time.time()
+        
         try:
-            logger.debug(
-                "Generating response",
-                model=self.client.get_model_name(),
-                prompt_length=len(prompt)
+            model_name = self.client.get_model_name()
+            
+            logger.info(
+                "Starting LLM generation",
+                model=model_name,
+                prompt_length=len(prompt),
+                use_template=use_template,
+                kwargs=kwargs
             )
             
             # Generate response
+            generate_start = time.time()
             response = self.client.generate(prompt, **kwargs)
+            generate_elapsed = time.time() - generate_start
+            
+            total_elapsed = time.time() - start_time
             
             logger.info(
                 "Response generated successfully",
-                model=self.client.get_model_name(),
-                response_length=len(response)
+                model=model_name,
+                prompt_length=len(prompt),
+                response_length=len(response),
+                generate_time=f"{generate_elapsed:.4f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                tokens_per_second=f"{len(response.split()) / generate_elapsed:.2f}" if generate_elapsed > 0 else "0"
             )
             
             return response
             
         except Exception as e:
-            logger.error("Failed to generate response", error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to generate response",
+                model=self.client.get_model_name(),
+                error=str(e),
+                error_type=type(e).__name__,
+                prompt_length=len(prompt),
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise LLMError(
                 f"Failed to generate LLM response: {str(e)}",
-                details={"error": str(e)}
+                details={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def generate_rag(
@@ -131,27 +158,65 @@ class LLMService:
             ...     contexts=["RAG stands for Retrieval-Augmented Generation"]
             ... )
         """
+        start_time = time.time()
+        
         try:
+            total_context_length = sum(len(ctx) for ctx in contexts)
+            
+            logger.info(
+                "Starting RAG generation",
+                question=question[:100],
+                question_length=len(question),
+                context_count=len(contexts),
+                total_context_length=total_context_length
+            )
+            
             # Build RAG prompt
+            prompt_start = time.time()
             prompt = self.prompt_builder.build_rag_prompt(question, contexts)
+            prompt_elapsed = time.time() - prompt_start
+            
+            logger.debug(
+                "RAG prompt built",
+                prompt_length=len(prompt),
+                build_time=f"{prompt_elapsed:.6f}s"
+            )
             
             # Generate response
             response = self.generate(prompt, **kwargs)
             
+            total_elapsed = time.time() - start_time
+            
             logger.info(
-                "RAG response generated",
+                "RAG response generated successfully",
                 question=question[:100],
                 context_count=len(contexts),
-                response_length=len(response)
+                total_context_length=total_context_length,
+                response_length=len(response),
+                prompt_build_time=f"{prompt_elapsed:.6f}s",
+                total_time=f"{total_elapsed:.4f}s"
             )
             
             return response
             
         except Exception as e:
-            logger.error("Failed to generate RAG response", error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to generate RAG response",
+                question=question[:100],
+                context_count=len(contexts),
+                error=str(e),
+                error_type=type(e).__name__,
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise LLMError(
                 f"Failed to generate RAG response: {str(e)}",
-                details={"question": question[:100], "error": str(e)}
+                details={
+                    "question": question[:100],
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def generate_stream(
@@ -177,30 +242,56 @@ class LLMService:
             >>> for chunk in chunks:
             ...     print(chunk, end='')
         """
+        start_time = time.time()
+        
         try:
-            logger.debug(
-                "Generating streaming response",
-                model=self.client.get_model_name(),
-                prompt_length=len(prompt)
+            model_name = self.client.get_model_name()
+            
+            logger.info(
+                "Starting streaming generation",
+                model=model_name,
+                prompt_length=len(prompt),
+                use_template=use_template
             )
             
             # Generate streaming response
+            stream_start = time.time()
             chunks = list(self.client.generate_stream(prompt, **kwargs))
+            stream_elapsed = time.time() - stream_start
+            
+            total_length = sum(len(c) for c in chunks)
+            total_elapsed = time.time() - start_time
             
             logger.info(
-                "Streaming response generated",
-                model=self.client.get_model_name(),
+                "Streaming response generated successfully",
+                model=model_name,
                 chunk_count=len(chunks),
-                total_length=sum(len(c) for c in chunks)
+                total_length=total_length,
+                stream_time=f"{stream_elapsed:.4f}s",
+                total_time=f"{total_elapsed:.4f}s",
+                avg_chunk_size=f"{total_length / len(chunks):.1f}" if chunks else "0",
+                tokens_per_second=f"{total_length / stream_elapsed:.2f}" if stream_elapsed > 0 else "0"
             )
             
             return chunks
             
         except Exception as e:
-            logger.error("Failed to generate streaming response", error=str(e))
+            elapsed = time.time() - start_time
+            logger.error(
+                "Failed to generate streaming response",
+                model=self.client.get_model_name(),
+                error=str(e),
+                error_type=type(e).__name__,
+                prompt_length=len(prompt),
+                elapsed_time=f"{elapsed:.4f}s"
+            )
             raise LLMError(
                 f"Failed to generate streaming response: {str(e)}",
-                details={"error": str(e)}
+                details={
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "elapsed_time": f"{elapsed:.4f}s"
+                }
             )
     
     def generate_rag_stream(
