@@ -160,6 +160,20 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Celery Exporter - Metrics for Celery
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    container_name: rag-celery-exporter
+    platform: linux/amd64
+    ports:
+      - "9091:9091"
+    command: ["--broker-url=redis://redis:6379/0", "--port=9091"]
+    depends_on:
+      - redis
+    networks:
+      - rag-network
+    restart: unless-stopped
+
   # Loki - Log Aggregation System
   loki:
     image: grafana/loki:latest
@@ -243,7 +257,6 @@ services:
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_LOG_MODE=console
       - GF_LOG_LEVEL=info
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
     depends_on:
       - prometheus
       - loki
