@@ -23,6 +23,7 @@ class AppConfig(BaseSettings):
     app_host: str = Field(default="0.0.0.0", description="API host")
     app_port: int = Field(default=8000, description="API port")
     api_version: str = Field(default="v1", description="API version")
+    timeout_keep_alive: int = Field(default=30, description="Keep-alive timeout in seconds")
     
     model_config = SettingsConfigDict(env_prefix="APP_", env_file=".env", extra="ignore")
 
@@ -50,7 +51,7 @@ class OllamaConfig(BaseSettings):
 
     url: str = Field(default="http://localhost:11434", description="Ollama server URL")
     model: str = Field(default="llama2", description="Default LLM model")
-    timeout: int = Field(default=60, description="Request timeout in seconds")
+    timeout: int = Field(default=120, description="Request timeout in seconds")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="LLM temperature")
     max_tokens: int = Field(default=2000, ge=1, description="Maximum response tokens")
     

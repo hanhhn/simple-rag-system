@@ -30,13 +30,16 @@ docker-compose ps
 # Qdrant
 docker run -d -p 6333:6333 -p 6334:6334 --name qdrant qdrant/qdrant:latest
 
-# Ollama
+# Ollama (model sẽ được tự động pull khi start với docker-compose)
+# Nếu chạy riêng, bạn cần pull model thủ công:
 docker run -d -p 11434:11434 --name ollama ollama/ollama:latest
 docker exec ollama ollama pull llama2
 
 # Redis
 docker run -d -p 6379:6379 --name redis redis:7-alpine
 ```
+
+**Lưu ý:** Khi sử dụng Docker Compose, Ollama sẽ tự động pull model được cấu hình trong `OLLAMA_MODEL` khi khởi động. Xem [docs/14-ollama-model-management.md](docs/14-ollama-model-management.md) để biết chi tiết.
 
 ## Bước 3: Cài đặt Python dependencies
 

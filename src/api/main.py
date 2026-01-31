@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.core.logging import configure_logging, get_logger
 from src.core.config import get_config
@@ -19,6 +20,9 @@ from src.api.middleware import rate_limit as rate_limit_middleware
 configure_logging()
 logger = get_logger(__name__)
 config = get_config()
+
+# Initialize Prometheus instrumentator before creating the app
+instrumentator = Instrumentator()
 
 
 # OpenAPI tags metadata
@@ -125,6 +129,9 @@ app.include_router(collections.router, prefix="/api/v1")
 app.include_router(tasks.router, prefix="/api/v1")
 app.include_router(nq_documents.router, prefix="/api/v1")
 
+# Instrument the app with Prometheus (must be done before startup)
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+
 # Mount static files for frontend (if frontend/dist exists)
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
@@ -145,6 +152,7 @@ if frontend_dist.exists():
 async def startup_event():
     """Run on application startup."""
     logger.info("Application starting up", app_name=config.app.app_name, version=config.app.api_version)
+    logger.info("Prometheus metrics enabled at /metrics")
     
     # Initialize necessary services
     # Services are lazily loaded via dependencies, so no explicit init needed
@@ -246,5 +254,6 @@ if __name__ == "__main__":
         host=config.app.app_host,
         port=config.app.app_port,
         reload=config.app.app_debug,
+        timeout_keep_alive=config.app.timeout_keep_alive,
         log_level="info" if not config.app.app_debug else "debug"
     )
