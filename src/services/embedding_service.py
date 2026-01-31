@@ -8,8 +8,7 @@ from src.core.logging import get_logger
 from src.core.exceptions import EmbeddingError
 from src.core.config import get_config
 from src.embedding.base import EmbeddingModel
-from src.embedding.models.minilm import MiniLMModel
-from src.embedding.models.mpnet import MPNetModel
+from src.embedding.models.bgem3 import BGEM3Model
 from src.embedding.cache import EmbeddingCache
 
 
@@ -23,18 +22,13 @@ class EmbeddingService:
     This class provides a high-level interface for embedding generation,
     including caching, batch processing, and model management.
     
+    Uses BGE-M3 model exclusively for high-quality multilingual embeddings.
+    
     Example:
         >>> service = EmbeddingService()
         >>> embeddings = service.generate_embeddings(["text1", "text2"])
         >>> print(len(embeddings))  # 2
     """
-    
-    MODEL_REGISTRY = {
-        "minilm": MiniLMModel,
-        "mpnet": MPNetModel,
-        "sentence-transformers/all-MiniLM-L6-v2": MiniLMModel,
-        "sentence-transformers/all-mpnet-base-v2": MPNetModel,
-    }
     
     def __init__(
         self,
@@ -92,24 +86,18 @@ class EmbeddingService:
     def _load_model(self, model_name: str) -> EmbeddingModel:
         """
         Load the embedding model.
+        
+        Uses BGE-M3 model exclusively.
 
         Args:
-            model_name: Name of the model
+            model_name: Name of the model (will always use BGE-M3)
 
         Returns:
-            Initialized embedding model
+            Initialized BGE-M3 model
         """
-        # Check if model is in registry
-        for key, model_class in self.MODEL_REGISTRY.items():
-            if key in model_name.lower():
-                logger.info("Loading model from registry", model=model_name)
-                # Enable lazy loading for multiprocessing safety
-                return model_class(lazy_load=True)
-
-        # If not found, try loading directly
-        logger.info("Loading model directly", model=model_name)
+        logger.info("Loading BGE-M3 model", model=model_name)
         # Enable lazy loading for multiprocessing safety
-        return MiniLMModel(model_name=model_name, lazy_load=True)
+        return BGEM3Model(model_name=model_name, lazy_load=True)
     
     def generate_embedding(self, text: str, use_cache_override: Optional[bool] = None) -> List[float]:
         """

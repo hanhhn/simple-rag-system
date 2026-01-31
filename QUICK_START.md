@@ -18,7 +18,7 @@ cp env.example .env
 
 ```bash
 # Khởi động Qdrant, Ollama, Redis
-docker-compose up -d qdrant ollama redis
+docker-compose up -d qdrant ollama redis celery-worker
 
 # Kiểm tra status
 docker-compose ps

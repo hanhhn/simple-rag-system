@@ -20,20 +20,19 @@ logger = get_logger(__name__)
 
 class ModelManager:
     """
-    Singleton manager for embedding models.
+    Singleton manager for BGE-M3 embedding model.
     
-    This class ensures that each model is loaded only once and reused
+    This class ensures that BGE-M3 is loaded only once and reused
     across the application. It provides thread-safe model loading and
     caching.
     
     Attributes:
         instance: The singleton instance of ModelManager
         cache_dir: Directory to cache downloaded models
-        device: Default device for model loading
         
     Example:
         >>> manager = ModelManager.get_instance()
-        >>> model = manager.get_model("sentence-transformers/all-MiniLM-L6-v2")
+        >>> model = manager.get_model("BAAI/bge-m3")
     """
     
     _instance = None
@@ -49,15 +48,13 @@ class ModelManager:
     
     def __init__(
         self,
-        cache_dir: Optional[Path | str] = None,
-        device: Optional[str] = None
+        cache_dir: Optional[Path | str] = None
     ) -> None:
         """
         Initialize model manager.
         
         Args:
             cache_dir: Directory to cache models
-            device: Default device for model loading
         """
         # Avoid re-initialization
         if hasattr(self, '_initialized') and self._initialized:
@@ -68,8 +65,6 @@ class ModelManager:
         self.cache_dir = Path(cache_dir or config.storage.model_cache_path)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
-        self.device = device or config.embedding.device
-        
         # Dictionary to store loaded models
         # Key: model_name, Value: (model, reference_count)
         self._models: Dict[str, tuple[object, int]] = {}
@@ -77,16 +72,11 @@ class ModelManager:
         
         # Import ModelLoader here to avoid circular imports
         from src.embedding.model_loader import ModelLoader
-        self._loader = ModelLoader(
-            cache_dir=self.cache_dir,
-            device=self.device,
-            use_half_precision=None  # Auto-detect
-        )
+        self._loader = ModelLoader(cache_dir=self.cache_dir)
         
         self._initialized = True
         logger.info(
             "ModelManager initialized",
-            device=self.device,
             cache_dir=str(self.cache_dir),
             thread_safe=True
         )
@@ -116,24 +106,24 @@ class ModelManager:
     
     def get_model(self, model_name: str) -> object:
         """
-        Get or load a model by name with reference counting.
+        Get or load BGE-M3 model with reference counting.
         
         This method implements lazy loading with reference counting.
         Models are loaded on first request and kept in memory until
         explicitly released.
         
         Args:
-            model_name: Name of the model to get/load
+            model_name: Name of the model to get/load (will always use BGE-M3)
             
         Returns:
-            The loaded sentence-transformers model
+            The loaded BGE-M3 sentence-transformers model
             
         Raises:
             EmbeddingModelNotFoundError: If model cannot be loaded
             
         Example:
             >>> manager = ModelManager.get_instance()
-            >>> model = manager.get_model("sentence-transformers/all-MiniLM-L6-v2")
+            >>> model = manager.get_model("BAAI/bge-m3")
         """
         start_time = time.time()
         
@@ -145,7 +135,7 @@ class ModelManager:
                 self._models[model_name] = (model, new_ref_count)
                 elapsed = time.time() - start_time
                 logger.info(
-                    "Model retrieved from cache",
+                    "BGE-M3 model retrieved from cache",
                     model=model_name,
                     ref_count=new_ref_count,
                     total_cached=len(self._models),
@@ -155,9 +145,8 @@ class ModelManager:
             
             # Load the model
             logger.info(
-                "Loading model through ModelManager",
+                "Loading BGE-M3 model through ModelManager",
                 model=model_name,
-                device=self.device,
                 current_cache_size=len(self._models)
             )
             
@@ -170,7 +159,7 @@ class ModelManager:
                 
                 total_elapsed = time.time() - start_time
                 logger.info(
-                    "Model loaded and cached",
+                    "BGE-M3 model loaded and cached",
                     model=model_name,
                     ref_count=1,
                     total_cached=len(self._models),
@@ -181,7 +170,7 @@ class ModelManager:
             except EmbeddingModelNotFoundError:
                 elapsed = time.time() - start_time
                 logger.error(
-                    "Model not found",
+                    "BGE-M3 model not found",
                     model=model_name,
                     elapsed_time=f"{elapsed:.4f}s"
                 )
@@ -189,14 +178,14 @@ class ModelManager:
             except Exception as e:
                 elapsed = time.time() - start_time
                 logger.error(
-                    "Failed to load model",
+                    "Failed to load BGE-M3 model",
                     model=model_name,
                     error=str(e),
                     error_type=type(e).__name__,
                     elapsed_time=f"{elapsed:.4f}s"
                 )
                 raise EmbeddingModelNotFoundError(
-                    f"Failed to load model '{model_name}': {str(e)}",
+                    f"Failed to load BGE-M3 model '{model_name}': {str(e)}",
                     details={
                         "model_name": model_name,
                         "error": str(e),
@@ -319,7 +308,6 @@ class ModelManager:
                 total_refs += ref_count
             
             return {
-                "device": self.device,
                 "total_models": len(self._models),
                 "total_references": total_refs,
                 "models": model_info
@@ -335,11 +323,8 @@ class ModelManager:
             model_names: List of model names to preload
             
         Example:
-            >>> manager = ModelManager.get_instance()
-            >>> manager.preload_models([
-            ...     "sentence-transformers/all-MiniLM-L6-v2",
-            ...     "sentence-transformers/all-mpnet-base-v2"
-            ... ])
+        >>> manager = ModelManager.get_instance()
+        >>> manager.preload_models(["BAAI/bge-m3"])
         """
         start_time = time.time()
         logger.info(

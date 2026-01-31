@@ -1,16 +1,13 @@
 """
 Embedding model implementations.
 
-This module provides both specific model implementations (MiniLM, MPNet)
-and a generic SentenceTransformerModel for any sentence-transformers model.
+This module provides the BGE-M3 embedding model - the primary and only
+embedding model used in the system. BGE-M3 offers superior performance,
+long context support (8192 tokens), and multilingual capabilities.
 """
 
-from .sentence_transformers_model import SentenceTransformerModel
-from .minilm import MiniLMModel
-from .mpnet import MPNetModel
+from .bgem3 import BGEM3Model
 
 __all__ = [
-    "SentenceTransformerModel",
-    "MiniLMModel",
-    "MPNetModel",
+    "BGEM3Model",
 ]

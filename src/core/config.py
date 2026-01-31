@@ -58,15 +58,14 @@ class OllamaConfig(BaseSettings):
 
 
 class EmbeddingConfig(BaseSettings):
-    """Embedding model configuration."""
+    """BGE-M3 embedding model configuration."""
 
     model_name: str = Field(
-        default="sentence-transformers/all-MiniLM-L6-v2",
-        description="Embedding model name or path"
+        default="BAAI/bge-m3",
+        description="BGE-M3 model name"
     )
-    batch_size: int = Field(default=32, ge=1, description="Batch size for embedding generation")
+    batch_size: int = Field(default=32, ge=1, le=64, description="Batch size for embedding generation")
     cache_enabled: bool = Field(default=True, description="Enable embedding cache")
-    device: Literal["cpu", "cuda"] = Field(default="cpu", description="Device for model inference")
 
     model_config = SettingsConfigDict(
         env_prefix="EMBEDDING_",
