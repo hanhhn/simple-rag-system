@@ -41,7 +41,6 @@ export function TasksPage() {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
   const [revokingTaskId, setRevokingTaskId] = useState<string | null>(null);
@@ -49,15 +48,6 @@ export function TasksPage() {
   useEffect(() => {
     loadTasks();
   }, []);
-
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(() => {
-        loadTasks();
-      }, 3000); // Refresh every 3 seconds
-      return () => clearInterval(interval);
-    }
-  }, [autoRefresh]);
 
   const loadTasks = async () => {
     try {
@@ -149,12 +139,6 @@ export function TasksPage() {
           <Button variant="outline" onClick={loadTasks}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
-          </Button>
-          <Button
-            variant={autoRefresh ? 'default' : 'outline'}
-            onClick={() => setAutoRefresh(!autoRefresh)}
-          >
-            Auto-refresh: {autoRefresh ? 'ON' : 'OFF'}
           </Button>
         </div>
       </div>

@@ -1,10 +1,10 @@
 # Scripts Guide
 
-## Scripts để tải và test BGE-M3 model
+## Scripts để tải và test Granite Embedding Model
 
 ### 1. Tải model về local (Download Model)
 
-Chạy script này để tải BGE-M3 model từ Hugging Face về local cache:
+Chạy script này để tải Granite embedding model từ Hugging Face về local cache:
 
 ```bash
 # Chỉ tải model
@@ -19,8 +19,8 @@ python scripts/download_model.py
 
 **Kết quả:**
 - Model sẽ được tải về: `data/models/`
-- Kích thước: ~2.2 GB
-- Tên folder: `models--BAAI--bge-m3`
+- Kích thước: ~95 MB
+- Tên folder: `models--ibm-granite--granite-embedding-small-english-r2`
 
 ### 2. Test model
 
@@ -52,7 +52,7 @@ dir data\models
 
 Nếu model đã tải, sẽ thấy:
 ```
-data/models/models--BAAI--bge-m3/
+data/models/models--ibm-granite--granite-embedding-small-english-r2/
 ├── config.json
 ├── model.safetensors
 ├── tokenizer.json
@@ -65,13 +65,13 @@ data/models/models--BAAI--bge-m3/
 Sau khi tải model xong, có thể sử dụng như sau:
 
 ```python
-from src.embedding import BGEM3Model
+from src.embedding.models.granite_embedding import GraniteEmbeddingModel
 
 # Model sẽ tự load từ cache
-model = BGEM3Model()
+model = GraniteEmbeddingModel()
 embedding = model.encode_single("Xin chào")
 
-print(f"Dimension: {len(embedding)}")  # 1024
+print(f"Dimension: {len(embedding)}")  # 384
 ```
 
 ### 5. Troubleshooting
@@ -95,7 +95,7 @@ python scripts/download_model.py
 #### Lỗi: "CUDA out of memory"
 
 **Nguyên nhân:**
-- GPU không đủ VRAM cho BGE-M3
+- GPU không đủ VRAM cho Granite model
 
 **Giải pháp:**
 ```bash
@@ -117,24 +117,24 @@ python scripts/download_model.py
 python scripts/test_embedding.py
 ```
 
-### 6. Thông tin về BGE-M3 Model
+### 6. Thông tin về Granite Embedding Model
 
 | Thuộc tính | Giá trị |
 |------------|----------|
-| Model Name | BAAI/bge-m3 |
-| Dimension | 1024 |
+| Model Name | ibm-granite/granite-embedding-small-english-r2 |
+| Dimension | 384 |
 | Max Context Length | 8192 tokens |
-| Supported Languages | 100+ (bao gồm tiếng Việt) |
-| Model Size | ~2.2 GB |
+| Supported Languages | English (tối ưu cho tiếng Anh) |
+| Model Size | ~95 MB |
 | Cache Location | `data/models/` |
 
 ### 7. Ví dụ sử dụng
 
 #### Ví dụ 1: Single encoding
 ```python
-from src.embedding import BGEM3Model
+from src.embedding.models.granite_embedding import GraniteEmbeddingModel
 
-model = BGEM3Model()
+model = GraniteEmbeddingModel()
 embedding = model.encode_single("Học máy là một nhánh của AI")
 print(f"Embedding: {embedding[:10]}...")
 ```
@@ -175,8 +175,8 @@ print(f"Similarity: {similarity:.4f}")
 
 3. Sử dụng trong code:
    ```python
-   from src.embedding import BGEM3Model
-   model = BGEM3Model()
+   from src.embedding.models.granite_embedding import GraniteEmbeddingModel
+   model = GraniteEmbeddingModel()
    # Sử dụng model...
    ```
 
@@ -185,4 +185,4 @@ print(f"Similarity: {similarity:.4f}")
 - Model chỉ cần tải **một lần** đầu tiên
 - Sau đó sẽ được cache trong `data/models/`
 - Khi khởi động app, model sẽ load từ cache (nhanh hơn)
-- Nếu muốn tải lại model, xóa folder `data/models/models--BAAI--bge-m3/` và chạy lại script download
+- Nếu muốn tải lại model, xóa folder `data/models/models--ibm-granite--granite-embedding-small-english-r2/` và chạy lại script download

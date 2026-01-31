@@ -1,5 +1,5 @@
 """
-Model loader for BGE-M3 embedding model.
+Model loader for Granite embedding model.
 """
 import time
 from pathlib import Path
@@ -16,19 +16,19 @@ logger = get_logger(__name__)
 
 class ModelLoader:
     """
-    Optimized loader for BGE-M3 embedding model.
-    
-    This class handles loading and managing BGE-M3 model with:
+    Optimized loader for Granite embedding model.
+
+    This class handles loading and managing Granite model with:
     - In-memory caching for reuse
     - Automatic model download from Hugging Face
     - CPU-optimized loading
-    
+
     Attributes:
         cache_dir: Directory to cache downloaded models
-        
+
     Example:
         >>> loader = ModelLoader()
-        >>> model = loader.load_model("BAAI/bge-m3")
+        >>> model = loader.load_model("ibm-granite/granite-embedding-small-english-r2")
     """
     
     def __init__(
@@ -55,20 +55,20 @@ class ModelLoader:
     
     def load_model(self, model_name: str) -> object:
         """
-        Load BGE-M3 embedding model from Hugging Face or local path.
-        
+        Load Granite embedding model from Hugging Face or local path.
+
         Args:
             model_name: Name of the model on Hugging Face or local path
-            
+
         Returns:
             Loaded sentence-transformers model
-            
+
         Raises:
             EmbeddingModelNotFoundError: If model cannot be loaded
-            
+
         Example:
             >>> loader = ModelLoader()
-            >>> model = loader.load_model("BAAI/bge-m3")
+            >>> model = loader.load_model("ibm-granite/granite-embedding-small-english-r2")
         """
         start_time = time.time()
         
@@ -83,31 +83,31 @@ class ModelLoader:
             return self._loaded_models[model_name]
         
         logger.info(
-            "Loading BGE-M3 embedding model",
+            "Loading Granite embedding model",
             model=model_name,
             cache_dir=str(self.cache_dir)
         )
-        
+
         try:
             # Prepare model arguments
             model_kwargs = {
                 "cache_folder": str(self.cache_dir),
                 "device": "cpu",  # Always use CPU for simplicity
             }
-            
+
             # Load model
             logger.info("Starting model download/load", model=model_name)
             load_start = time.time()
             model = SentenceTransformer(model_name, **model_kwargs)
             load_elapsed = time.time() - load_start
             logger.info("Model downloaded/loaded", model=model_name, load_time=f"{load_elapsed:.4f}s")
-            
+
             # Get model details
             dimension = model.get_sentence_embedding_dimension()
             max_seq_length = model.max_seq_length if hasattr(model, 'max_seq_length') else 'unknown'
-            
+
             logger.info(
-                "BGE-M3 model loaded successfully",
+                "Granite model loaded successfully",
                 model=model_name,
                 dimension=dimension,
                 max_seq_length=max_seq_length,
@@ -138,14 +138,14 @@ class ModelLoader:
         except Exception as e:
             elapsed = time.time() - start_time
             logger.error(
-                "Failed to load BGE-M3 model",
+                "Failed to load Granite model",
                 model=model_name,
                 error=str(e),
                 error_type=type(e).__name__,
                 elapsed_time=f"{elapsed:.4f}s"
             )
             raise EmbeddingModelNotFoundError(
-                f"Failed to load BGE-M3 embedding model '{model_name}': {str(e)}",
+                f"Failed to load Granite embedding model '{model_name}': {str(e)}",
                 details={
                     "model_name": model_name,
                     "error": str(e),
@@ -163,7 +163,7 @@ class ModelLoader:
             
         Example:
             >>> loader = ModelLoader()
-            >>> loader.unload_model("sentence-transformers/all-MiniLM-L6-v2")
+            >>> loader.unload_model("ibm-granite/granite-embedding-small-english-r2")
         """
         if model_name in self._loaded_models:
             del self._loaded_models[model_name]
@@ -211,7 +211,7 @@ class ModelLoader:
             
         Example:
             >>> loader = ModelLoader()
-            >>> dim = loader.get_model_dimension("sentence-transformers/all-MiniLM-L6-v2")
+            >>> dim = loader.get_model_dimension("ibm-granite/granite-embedding-small-english-r2")
             >>> print(dim)  # 384
         """
         model = self.load_model(model_name)

@@ -25,9 +25,15 @@ The system follows a layered architecture:
 - **Backend**: Python 3.11+, FastAPI
 - **Vector Database**: Qdrant
 - **LLM Runtime**: Ollama (Llama 2, Mistral, etc.)
-- **Embeddings**: sentence-transformers
+- **Embeddings**: sentence-transformers (Granite embedding model)
+  - Model: `ibm-granite/granite-embedding-small-english-r2`
+  - Dimension: 384
+  - Max context: 8192 tokens
+  - Libraries: transformers 5.0.0+, sentence-transformers 5.2.2+, torch 2.10.0+
 - **Document Processing**: PyPDF2, python-docx
 - **Deployment**: Docker, Docker Compose
+
+**Note:** For more details on the Granite model migration, see [VERSION_UPDATES.md](VERSION_UPDATES.md) or [GRANITE_MIGRATION.md](GRANITE_MIGRATION.md).
 
 ## Quick Start
 

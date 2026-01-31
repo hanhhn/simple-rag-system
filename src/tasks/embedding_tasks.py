@@ -20,7 +20,8 @@ logger = get_logger(__name__)
     name="src.tasks.embedding_tasks.generate_embeddings_task",
     bind=True,
     max_retries=3,
-    default_retry_delay=60
+    default_retry_delay=60,
+    queue="embeddings"
 )
 def generate_embeddings_task(
     self,

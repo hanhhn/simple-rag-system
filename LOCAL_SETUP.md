@@ -280,6 +280,39 @@ pip install "numpy<2" --upgrade
 
 **Lưu ý:** File `requirements.txt`, `environment.yml` và `environment-dev.yml` đã được cấu hình với `numpy<2` để tránh lỗi này. Nếu bạn cài đặt từ các file này, lỗi sẽ không xảy ra.
 
+### Lỗi: KeyError 'modernbert'
+
+Nếu gặp lỗi `KeyError: 'modernbert'` khi chạy ứng dụng với Granite embedding model:
+
+**Nguyên nhân:** Phiên bản `transformers` cũ không hỗ trợ kiến trúc ModernBERT mà Granite model sử dụng.
+
+**Giải pháp:**
+
+**Với Conda:**
+```bash
+conda activate simple-rag-system
+conda env update -f environment.yml --prune
+```
+
+Hoặc cài thủ công:
+```bash
+conda activate simple-rag-system
+pip install --upgrade transformers sentence-transformers torch
+```
+
+**Với venv:**
+```bash
+source venv/bin/activate  # hoặc venv\Scripts\activate trên Windows
+pip install --upgrade transformers sentence-transformers torch
+```
+
+**Phiên bản tối thiểu yêu cầu:**
+- `transformers>=5.0.0`
+- `sentence-transformers>=5.2.2`
+- `torch>=2.10.0`
+
+**Lưu ý:** Các file `requirements.txt`, `environment.yml` và `environment-dev.yml` đã được cập nhật với các phiên bản mới này. Xem [GRANITE_MIGRATION.md](GRANITE_MIGRATION.md) để biết thêm chi tiết.
+
 ### Debug mode
 
 Để bật debug mode, set trong `.env`:

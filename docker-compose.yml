@@ -118,7 +118,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: rag-celery-worker
-    command: celery -A src.tasks.celery_app worker --pool=solo --loglevel=info --queues=documents,embeddings
+    command: celery -A src.tasks.celery_app worker --pool=solo --loglevel=info --queues=documents,embeddings --concurrency=1 --task-events
     environment:
       - APP_ENV=development
       - APP_DEBUG=True
@@ -127,6 +127,27 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - CELERY_WORKER_POOL=solo
+      # PyTorch/TensorFlow settings to prevent hanging in Docker
+      - OMP_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - TOKENIZERS_PARALLELISM=false
+      - NUMEXPR_MAX_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - PYTHONDONTWRITEBYTECODE=1
+      # Disable PyTorch multi-threading completely (fix for ARM64 Docker)
+      - TORCH_DISABLE_CUDA_SUPPORT_CHECK=1
+      - TORCH_ENABLE_MPS_FALLBACK=0
+      - KMP_DUPLICATE_LIB_OK=TRUE
+      - MKL_DEBUG_CPU_TYPE=5
+      # Aggressive threading disable for ARM64 compatibility
+      - NUMBA_DISABLE_JIT=1
+      - PYTORCH_ENABLE_MPS_FALLBACK=0
+      - ATEN_THREADING_IMPLEMENTATION=0
+      - TORCH_ALLOW_TF32_CUBLAS_OVERRIDE=0
+      # Force single-threaded execution
+      - OMP_PLACES=cores
+      - OMP_PROC_BIND=TRUE
+      - OMP_WAIT_POLICY=ACTIVE
     volumes:
       - ./src:/app/src
       - ./data:/app/data

@@ -21,9 +21,9 @@ dependencies:
     
     # Embeddings and ML
     - numpy<2  # Required: torch and sentence-transformers are compiled against NumPy 1.x
-    - sentence-transformers==2.2.2
-    - torch==2.1.0
-    - transformers==4.35.0
+    - sentence-transformers==5.2.2
+    - torch==2.10.0
+    - transformers==5.0.0
     
     # Document Processing
     - PyPDF2==3.0.1

@@ -21,7 +21,8 @@ logger = get_logger(__name__)
     name="src.tasks.document_tasks.process_document_task",
     bind=True,
     max_retries=3,
-    default_retry_delay=60
+    default_retry_delay=60,
+    queue="documents"
 )
 def process_document_task(
     self,
@@ -92,12 +93,14 @@ def process_document_task(
         # Queue embedding generation task
         # Import here to avoid circular dependency
         from src.tasks import embedding_tasks
-        
-        embedding_task = embedding_tasks.generate_embeddings_task.delay(
-            chunks_data=chunks_data,
-            collection=collection,
-            document_id=metadata.get("document_id") if metadata else None,
-            filename=filename
+
+        # Queue the task - queue is specified in the task decorator
+        embedding_task = embedding_tasks.generate_embeddings_task.apply_async(
+            args=[chunks_data, collection],
+            kwargs={
+                "document_id": metadata.get("document_id") if metadata else None,
+                "filename": filename
+            }
         )
         
         logger.info(

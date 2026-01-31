@@ -71,10 +71,10 @@ async def health_check() -> HealthResponse:
     # Check embedding model
     try:
         from src.services.embedding_service import EmbeddingService
-        from src.embedding import BGEM3Model
-        
-        # Directly test BGE-M3 model (avoid service overhead)
-        model = BGEM3Model()
+        from src.embedding.models.granite_embedding import GraniteEmbeddingModel
+
+        # Directly test Granite model (avoid service overhead)
+        model = GraniteEmbeddingModel()
         model.get_dimension()
         services_status["embeddings"] = "healthy"
     except Exception as e:

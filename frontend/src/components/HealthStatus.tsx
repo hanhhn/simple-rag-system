@@ -10,8 +10,6 @@ export function HealthStatus() {
 
   useEffect(() => {
     checkHealth();
-    const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
-    return () => clearInterval(interval);
   }, []);
 
   const checkHealth = async () => {

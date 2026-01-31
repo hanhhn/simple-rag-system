@@ -8,7 +8,7 @@ from src.core.logging import get_logger
 from src.core.exceptions import EmbeddingError
 from src.core.config import get_config
 from src.embedding.base import EmbeddingModel
-from src.embedding.models.bgem3 import BGEM3Model
+from src.embedding.models.granite_embedding import GraniteEmbeddingModel
 from src.embedding.cache import EmbeddingCache
 
 
@@ -18,12 +18,12 @@ logger = get_logger(__name__)
 class EmbeddingService:
     """
     Service for generating and managing embeddings.
-    
+
     This class provides a high-level interface for embedding generation,
     including caching, batch processing, and model management.
-    
-    Uses BGE-M3 model exclusively for high-quality multilingual embeddings.
-    
+
+    Uses Granite embedding model exclusively for high-quality English embeddings.
+
     Example:
         >>> service = EmbeddingService()
         >>> embeddings = service.generate_embeddings(["text1", "text2"])
@@ -86,18 +86,18 @@ class EmbeddingService:
     def _load_model(self, model_name: str) -> EmbeddingModel:
         """
         Load the embedding model.
-        
-        Uses BGE-M3 model exclusively.
+
+        Uses Granite embedding model exclusively.
 
         Args:
-            model_name: Name of the model (will always use BGE-M3)
+            model_name: Name of the model (will always use Granite)
 
         Returns:
-            Initialized BGE-M3 model
+            Initialized Granite model
         """
-        logger.info("Loading BGE-M3 model", model=model_name)
+        logger.info("Loading Granite model", model=model_name)
         # Enable lazy loading for multiprocessing safety
-        return BGEM3Model(model_name=model_name, lazy_load=True)
+        return GraniteEmbeddingModel(model_name=model_name, lazy_load=True)
     
     def generate_embedding(self, text: str, use_cache_override: Optional[bool] = None) -> List[float]:
         """

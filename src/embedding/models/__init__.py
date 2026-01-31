@@ -1,13 +1,13 @@
 """
 Embedding model implementations.
 
-This module provides the BGE-M3 embedding model - the primary and only
-embedding model used in the system. BGE-M3 offers superior performance,
-long context support (8192 tokens), and multilingual capabilities.
+This module provides the Granite embedding model - the primary and only
+embedding model used in the system. Granite offers superior performance,
+long context support (8192 tokens), and enterprise-friendly license.
 """
 
-from .bgem3 import BGEM3Model
+from .granite_embedding import GraniteEmbeddingModel
 
 __all__ = [
-    "BGEM3Model",
+    "GraniteEmbeddingModel",
 ]

@@ -126,6 +126,26 @@ Khi có thay đổi trong `environment.yml`:
 conda env update -f environment.yml --prune
 ```
 
+**Lưu ý quan trọng:** Nếu bạn đang gặp lỗi `KeyError: 'modernbert'` hoặc các lỗi liên quan đến Granite embedding model, bạn cần cập nhật environment để có các phiên bản mới nhất:
+
+```bash
+# Cập nhật environment
+conda env update -f environment.yml --prune
+
+# Hoặc xóa và tạo lại environment (đảm bảo sạch hoàn toàn)
+conda deactivate
+conda env remove -n simple-rag-system
+conda env create -f environment.yml
+conda activate simple-rag-system
+```
+
+Các phiên bản tối thiểu yêu cầu cho Granite model:
+- `transformers>=5.0.0` (hỗ trợ ModernBERT architecture)
+- `sentence-transformers>=5.2.2`
+- `torch>=2.10.0`
+
+Xem thêm chi tiết trong [GRANITE_MIGRATION.md](GRANITE_MIGRATION.md).
+
 ### Cài thêm packages
 
 ```bash

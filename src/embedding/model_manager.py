@@ -20,19 +20,19 @@ logger = get_logger(__name__)
 
 class ModelManager:
     """
-    Singleton manager for BGE-M3 embedding model.
-    
-    This class ensures that BGE-M3 is loaded only once and reused
+    Singleton manager for Granite embedding model.
+
+    This class ensures that Granite is loaded only once and reused
     across the application. It provides thread-safe model loading and
     caching.
-    
+
     Attributes:
         instance: The singleton instance of ModelManager
         cache_dir: Directory to cache downloaded models
-        
+
     Example:
         >>> manager = ModelManager.get_instance()
-        >>> model = manager.get_model("BAAI/bge-m3")
+        >>> model = manager.get_model("ibm-granite/granite-embedding-small-english-r2")
     """
     
     _instance = None
@@ -106,24 +106,24 @@ class ModelManager:
     
     def get_model(self, model_name: str) -> object:
         """
-        Get or load BGE-M3 model with reference counting.
-        
+        Get or load Granite model with reference counting.
+
         This method implements lazy loading with reference counting.
         Models are loaded on first request and kept in memory until
         explicitly released.
-        
+
         Args:
-            model_name: Name of the model to get/load (will always use BGE-M3)
-            
+            model_name: Name of the model to get/load (will always use Granite)
+
         Returns:
-            The loaded BGE-M3 sentence-transformers model
-            
+            The loaded Granite sentence-transformers model
+
         Raises:
             EmbeddingModelNotFoundError: If model cannot be loaded
-            
+
         Example:
             >>> manager = ModelManager.get_instance()
-            >>> model = manager.get_model("BAAI/bge-m3")
+            >>> model = manager.get_model("ibm-granite/granite-embedding-small-english-r2")
         """
         start_time = time.time()
         
@@ -135,31 +135,31 @@ class ModelManager:
                 self._models[model_name] = (model, new_ref_count)
                 elapsed = time.time() - start_time
                 logger.info(
-                    "BGE-M3 model retrieved from cache",
+                    "Granite model retrieved from cache",
                     model=model_name,
                     ref_count=new_ref_count,
                     total_cached=len(self._models),
                     retrieval_time=f"{elapsed:.6f}s"
                 )
                 return model
-            
+
             # Load the model
             logger.info(
-                "Loading BGE-M3 model through ModelManager",
+                "Loading Granite model through ModelManager",
                 model=model_name,
                 current_cache_size=len(self._models)
             )
-            
+
             load_start = time.time()
             try:
                 model = self._loader.load_model(model_name)
                 load_elapsed = time.time() - load_start
-                
+
                 self._models[model_name] = (model, 1)
-                
+
                 total_elapsed = time.time() - start_time
                 logger.info(
-                    "BGE-M3 model loaded and cached",
+                    "Granite model loaded and cached",
                     model=model_name,
                     ref_count=1,
                     total_cached=len(self._models),
@@ -170,7 +170,7 @@ class ModelManager:
             except EmbeddingModelNotFoundError:
                 elapsed = time.time() - start_time
                 logger.error(
-                    "BGE-M3 model not found",
+                    "Granite model not found",
                     model=model_name,
                     elapsed_time=f"{elapsed:.4f}s"
                 )
@@ -178,14 +178,14 @@ class ModelManager:
             except Exception as e:
                 elapsed = time.time() - start_time
                 logger.error(
-                    "Failed to load BGE-M3 model",
+                    "Failed to load Granite model",
                     model=model_name,
                     error=str(e),
                     error_type=type(e).__name__,
                     elapsed_time=f"{elapsed:.4f}s"
                 )
                 raise EmbeddingModelNotFoundError(
-                    f"Failed to load BGE-M3 model '{model_name}': {str(e)}",
+                    f"Failed to load Granite model '{model_name}': {str(e)}",
                     details={
                         "model_name": model_name,
                         "error": str(e),
@@ -324,7 +324,7 @@ class ModelManager:
             
         Example:
         >>> manager = ModelManager.get_instance()
-        >>> manager.preload_models(["BAAI/bge-m3"])
+        >>> manager.preload_models(["ibm-granite/granite-embedding-small-english-r2"])
         """
         start_time = time.time()
         logger.info(

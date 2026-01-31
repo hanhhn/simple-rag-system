@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Download BGE-M3 model to local cache.
+Download Granite embedding model to local cache.
 
-This script downloads the BGE-M3 model from Hugging Face and caches it locally.
+This script downloads the Granite embedding model from Hugging Face and caches it locally.
 """
 import sys
 from pathlib import Path
@@ -18,14 +18,14 @@ from src.core.config import get_config
 logger = get_logger(__name__)
 
 
-def download_bgem3_model():
-    """Download BGE-M3 model to local cache."""
+def download_granite_model():
+    """Download Granite embedding model to local cache."""
     print("\n" + "="*70)
-    print("Downloading BGE-M3 Model")
+    print("Downloading Granite Embedding Model")
     print("="*70 + "\n")
 
     config = get_config()
-    model_name = "BAAI/bge-m3"
+    model_name = config.embedding.model_name  # Get from config: ibm-granite/granite-embedding-small-english-r2
     cache_dir = config.storage.model_cache_path
 
     print(f"Model: {model_name}")
@@ -70,7 +70,7 @@ def download_bgem3_model():
         print(f"Error: {e}")
         print(f"Error type: {type(e).__name__}\n")
 
-        logger.error("Failed to download BGE-M3 model", error=str(e), exc_info=True)
+        logger.error("Failed to download Granite model", error=str(e), exc_info=True)
         sys.exit(1)
 
 
@@ -86,19 +86,19 @@ def _get_dir_size(directory: Path) -> float:
 def verify_model():
     """Verify that model is downloaded and accessible."""
     print("\n" + "="*70)
-    print("Verifying BGE-M3 Model")
+    print("Verifying Granite Embedding Model")
     print("="*70 + "\n")
 
     try:
-        from src.embedding import BGEM3Model
+        from src.embedding.models.granite_embedding import GraniteEmbeddingModel
 
         # Initialize model (will load from cache if exists)
-        print("Loading BGE-M3 model...")
-        model = BGEM3Model(lazy_load=False)
+        print("Loading Granite model...")
+        model = GraniteEmbeddingModel(lazy_load=False)
 
         # Test encoding
         print("\nTesting encoding...")
-        test_text = "Xin chào, đây là văn bản test"
+        test_text = "Hello, this is a test text"
         embedding = model.encode_single(test_text)
 
         print(f"✓ Model loaded successfully")
@@ -120,7 +120,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Download and verify BGE-M3 model"
+        description="Download and verify Granite embedding model"
     )
     parser.add_argument(
         "--download",
@@ -142,7 +142,7 @@ def main():
 
     # Download if requested
     if args.download:
-        download_bgem3_model()
+        download_granite_model()
 
     # Verify if requested
     if args.verify:

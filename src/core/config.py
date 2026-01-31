@@ -58,11 +58,11 @@ class OllamaConfig(BaseSettings):
 
 
 class EmbeddingConfig(BaseSettings):
-    """BGE-M3 embedding model configuration."""
+    """Granite embedding model configuration."""
 
     model_name: str = Field(
-        default="BAAI/bge-m3",
-        description="BGE-M3 model name"
+        default="ibm-granite/granite-embedding-small-english-r2",
+        description="Granite embedding model name"
     )
     batch_size: int = Field(default=32, ge=1, le=64, description="Batch size for embedding generation")
     cache_enabled: bool = Field(default=True, description="Enable embedding cache")
