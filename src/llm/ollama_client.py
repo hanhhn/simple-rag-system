@@ -88,7 +88,7 @@ class OllamaClient(LLMClient):
             >>> print(response)
         """
         try:
-            logger.debug(
+            logger.info(
                 "Generating response from Ollama",
                 model=self.model_name,
                 prompt_length=len(prompt)
@@ -164,7 +164,7 @@ class OllamaClient(LLMClient):
             ...     print(chunk, end='')
         """
         try:
-            logger.debug(
+            logger.info(
                 "Generating streaming response from Ollama",
                 model=self.model_name,
                 prompt_length=len(prompt)
@@ -236,7 +236,7 @@ class OllamaClient(LLMClient):
             Generated text response
         """
         try:
-            logger.debug(
+            logger.info(
                 "Generating async response from Ollama",
                 model=self.model_name,
                 prompt_length=len(prompt)
@@ -396,7 +396,7 @@ class OllamaClient(LLMClient):
         """
         self._client.close()
         self._async_client.aclose()
-        logger.debug("Ollama client closed")
+        logger.info("Ollama client closed")
     
     async def aclose(self) -> None:
         """
@@ -404,4 +404,4 @@ class OllamaClient(LLMClient):
         """
         await self._async_client.aclose()
         self._client.close()
-        logger.debug("Ollama async client closed")
+        logger.info("Ollama async client closed")

@@ -71,8 +71,11 @@ async def health_check() -> HealthResponse:
     # Check embedding model
     try:
         from src.services.embedding_service import EmbeddingService
-        embeddings = EmbeddingService()
-        embeddings.get_dimension()
+        from src.embedding import BGEM3Model
+        
+        # Directly test BGE-M3 model (avoid service overhead)
+        model = BGEM3Model()
+        model.get_dimension()
         services_status["embeddings"] = "healthy"
     except Exception as e:
         logger.error("Embedding model health check failed", error=str(e))

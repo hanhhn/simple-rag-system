@@ -104,7 +104,7 @@ class EmbeddingCache:
         
         if not self.enabled:
             self._cache_misses += 1
-            logger.debug("Cache is disabled, skipping cache lookup")
+            logger.info("Cache is disabled, skipping cache lookup")
             return None
         
         key = self._get_cache_key(text)
@@ -118,7 +118,7 @@ class EmbeddingCache:
             self._cache_hits += 1
             # Move to end for LRU (most recently used)
             self.cache.move_to_end(key)
-            logger.debug(
+            logger.info(
                 "Cache hit",
                 cache_hit_rate=f"{self.get_cache_hit_rate():.2%}",
                 retrieval_time=f"{elapsed:.6f}s",
@@ -126,7 +126,7 @@ class EmbeddingCache:
             )
         else:
             self._cache_misses += 1
-            logger.debug(
+            logger.info(
                 "Cache miss",
                 cache_hit_rate=f"{self.get_cache_hit_rate():.2%}",
                 lookup_time=f"{elapsed:.6f}s",
@@ -149,7 +149,7 @@ class EmbeddingCache:
         start_time = time.time()
         
         if not self.enabled:
-            logger.debug("Cache is disabled, skipping cache set")
+            logger.info("Cache is disabled, skipping cache set")
             return
         
         key = self._get_cache_key(text)
@@ -157,10 +157,10 @@ class EmbeddingCache:
         # Update existing key or add new one
         if key in self.cache:
             self.cache.move_to_end(key)
-            logger.debug("Updated existing cache entry", entries=len(self.cache))
+            logger.info("Updated existing cache entry", entries=len(self.cache))
         else:
             self.cache[key] = embedding
-            logger.debug("Added new cache entry", entries=len(self.cache))
+            logger.info("Added new cache entry", entries=len(self.cache))
         
         # Evict oldest entries if cache is too large
         evicted = 0

@@ -217,7 +217,7 @@ class ModelManager:
                 if new_ref_count == 0:
                     logger.info("Model reference count reached 0", model=model_name)
                 else:
-                    logger.debug(
+                    logger.info(
                         "Model reference decremented",
                         model=model_name,
                         ref_count=new_ref_count

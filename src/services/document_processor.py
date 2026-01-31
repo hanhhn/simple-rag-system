@@ -95,7 +95,7 @@ class DocumentProcessor:
             parser_start = time.time()
             parser = self.parser_factory.get_parser(filepath)
             parser_get_elapsed = time.time() - parser_start
-            logger.debug("Parser selected", parser_type=type(parser).__name__, elapsed=f"{parser_get_elapsed:.6f}s")
+            logger.info("Parser selected", parser_type=type(parser).__name__, elapsed=f"{parser_get_elapsed:.6f}s")
             
             # Parse document
             parse_start = time.time()

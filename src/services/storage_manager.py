@@ -206,7 +206,7 @@ class StorageManager:
             
             content = filepath.read_bytes()
             
-            logger.debug(
+            logger.info(
                 "File retrieved successfully",
                 filepath=str(filepath),
                 size_bytes=len(content),
@@ -290,7 +290,7 @@ class StorageManager:
                 if item.is_file():
                     files.append(item.name)
             
-            logger.debug(
+            logger.info(
                 "Listed files in collection",
                 collection=collection_name,
                 count=len(files)
@@ -362,7 +362,7 @@ class StorageManager:
                 if item.is_dir() and not item.name.startswith('.'):
                     collections.append(item.name)
             
-            logger.debug(
+            logger.info(
                 "Listed collections",
                 count=len(collections)
             )

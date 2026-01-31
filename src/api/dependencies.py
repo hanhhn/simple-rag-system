@@ -29,7 +29,7 @@ def get_query_processor() -> QueryProcessor:
     Returns:
         QueryProcessor instance
     """
-    logger.debug("Injecting query processor dependency")
+    logger.info("Injecting query processor dependency")
     return QueryProcessor()
 
 
@@ -40,7 +40,7 @@ def get_storage_manager() -> StorageManager:
     Returns:
         StorageManager instance
     """
-    logger.debug("Injecting storage manager dependency")
+    logger.info("Injecting storage manager dependency")
     return StorageManager()
 
 
@@ -51,7 +51,7 @@ def get_document_processor() -> DocumentProcessor:
     Returns:
         DocumentProcessor instance
     """
-    logger.debug("Injecting document processor dependency")
+    logger.info("Injecting document processor dependency")
     return DocumentProcessor()
 
 
@@ -62,7 +62,7 @@ def get_vector_store() -> VectorStore:
     Returns:
         VectorStore instance
     """
-    logger.debug("Injecting vector store dependency")
+    logger.info("Injecting vector store dependency")
     return VectorStore()
 
 
@@ -73,7 +73,7 @@ def get_embedding_service() -> EmbeddingService:
     Returns:
         EmbeddingService instance
     """
-    logger.debug("Injecting embedding service dependency")
+    logger.info("Injecting embedding service dependency")
     return EmbeddingService()
 
 
@@ -84,7 +84,7 @@ def get_llm_service() -> LLMService:
     Returns:
         LLMService instance
     """
-    logger.debug("Injecting LLM service dependency")
+    logger.info("Injecting LLM service dependency")
     return LLMService()
 
 
@@ -107,7 +107,7 @@ async def verify_api_key(
     
     # Skip verification if no secret key is configured
     if not config.security.jwt_secret_key or config.security.jwt_secret_key == "change-this-secret-key-in-production":
-        logger.debug("API key verification skipped (development mode)")
+        logger.info("API key verification skipped (development mode)")
         return credentials.credentials or ""
     
     # In production, you would verify the API key here
@@ -124,6 +124,6 @@ async def verify_api_key(
         )
     
     api_key = credentials.credentials
-    logger.debug("API key verified")
+    logger.info("API key verified")
     
     return api_key

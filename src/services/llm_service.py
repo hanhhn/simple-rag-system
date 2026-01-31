@@ -176,7 +176,7 @@ class LLMService:
             prompt = self.prompt_builder.build_rag_prompt(question, contexts)
             prompt_elapsed = time.time() - prompt_start
             
-            logger.debug(
+            logger.info(
                 "RAG prompt built",
                 prompt_length=len(prompt),
                 build_time=f"{prompt_elapsed:.6f}s"
@@ -427,4 +427,4 @@ class LLMService:
     def close(self) -> None:
         """Close LLM client."""
         self.client.close()
-        logger.debug("LLM service closed")
+        logger.info("LLM service closed")

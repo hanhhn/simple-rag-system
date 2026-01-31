@@ -101,7 +101,7 @@ class BGEM3Model(EmbeddingModel):
     @property
     def _loaded_model(self):
         """Lazy load of model when first accessed."""
-        logger.debug("Accessing _loaded_model property", model=self._model_name, has_model=self.model is not None)
+        logger.info("Accessing _loaded_model property", model=self._model_name, has_model=self.model is not None)
 
         if self.model is None:
             logger.info("Loading BGE-M3 model on first access", model=self._model_name)
@@ -116,7 +116,7 @@ class BGEM3Model(EmbeddingModel):
                 )
                 raise
 
-        logger.debug("Returning BGE-M3 model from _loaded_model property", model=self._model_name)
+        logger.info("Returning BGE-M3 model from _loaded_model property", model=self._model_name)
         return self.model
     
     def encode(self, texts: List[str], batch_size: int = 32) -> List[List[float]]:
@@ -152,7 +152,7 @@ class BGEM3Model(EmbeddingModel):
         )
 
         try:
-            logger.debug(
+            logger.info(
                 "Encoding texts with BGE-M3",
                 count=len(texts),
                 batch_size=batch_size,
@@ -161,10 +161,11 @@ class BGEM3Model(EmbeddingModel):
 
             # Encode texts using lazy-loaded model
             model = self._loaded_model
-            logger.debug("BGE-M3 model loaded, starting encoding")
+            logger.info("BGE-M3 model loaded, starting encoding", count=len(texts), batch_size=batch_size)
 
             try:
                 # BGE-M3 encoding with long context support
+                logger.info("Calling model.encode()", text_count=len(texts), batch_size=batch_size)
                 embeddings = model.encode(
                     texts,
                     batch_size=batch_size,
@@ -172,7 +173,7 @@ class BGEM3Model(EmbeddingModel):
                     convert_to_numpy=True,
                     normalize_embeddings=True
                 )
-                logger.debug("BGE-M3 encoding completed, converting to list")
+                logger.info("BGE-M3 encoding completed, converting to list", embedding_count=len(embeddings) if embeddings is not None else 0)
 
                 # Convert to list format
                 result = [embedding.tolist() for embedding in embeddings]

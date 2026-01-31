@@ -90,7 +90,7 @@ Assistant:"""
                 question=question
             )
             
-            logger.debug(
+            logger.info(
                 "Built RAG prompt",
                 question=question[:100],
                 context_length=len(context_text)
@@ -147,7 +147,7 @@ Assistant:"""
                 history=history_section
             )
             
-            logger.debug(
+            logger.info(
                 "Built chat prompt",
                 question=question[:100],
                 has_context=bool(contexts),
@@ -180,7 +180,7 @@ Text:
 
 Summary:"""
         
-        logger.debug(
+        logger.info(
             "Built summarization prompt",
             text_length=len(text),
             target_length=max_length

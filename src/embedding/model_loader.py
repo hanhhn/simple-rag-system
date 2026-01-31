@@ -96,11 +96,11 @@ class ModelLoader:
             }
             
             # Load model
-            logger.debug("Starting model download/load", model=model_name)
+            logger.info("Starting model download/load", model=model_name)
             load_start = time.time()
             model = SentenceTransformer(model_name, **model_kwargs)
             load_elapsed = time.time() - load_start
-            logger.debug("Model downloaded/loaded", model=model_name, load_time=f"{load_elapsed:.4f}s")
+            logger.info("Model downloaded/loaded", model=model_name, load_time=f"{load_elapsed:.4f}s")
             
             # Get model details
             dimension = model.get_sentence_embedding_dimension()

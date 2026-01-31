@@ -103,7 +103,7 @@ class QueryProcessor:
             query_embedding = self.embedding_service.generate_embedding(query)
             embedding_elapsed = time.time() - embedding_start
             
-            logger.debug(
+            logger.info(
                 "Query embedded",
                 embedding_dimension=len(query_embedding),
                 embedding_time=f"{embedding_elapsed:.4f}s"
@@ -143,7 +143,7 @@ class QueryProcessor:
                 contexts = [doc.get("payload", {}).get("text", "") for doc in search_results]
                 total_context_length = sum(len(ctx) for ctx in contexts)
                 
-                logger.debug(
+                logger.info(
                     "Preparing RAG context",
                     context_count=len(contexts),
                     total_context_length=total_context_length
@@ -164,7 +164,7 @@ class QueryProcessor:
                 rag_elapsed = 0
                 result["answer"] = None
                 result["context_count"] = 0
-                logger.debug("Skipping RAG generation", reason="use_rag=False or no results")
+                logger.info("Skipping RAG generation", reason="use_rag=False or no results")
             
             total_elapsed = time.time() - start_time
             

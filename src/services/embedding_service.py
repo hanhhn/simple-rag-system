@@ -142,7 +142,7 @@ class EmbeddingService:
                 )
                 return cached_embedding
             
-            logger.debug(
+            logger.info(
                 "Embedding cache miss",
                 text_length=len(text),
                 cache_lookup_time=f"{cache_elapsed:.6f}s"
@@ -220,7 +220,7 @@ class EmbeddingService:
         start_time = time.time()
         
         if not texts:
-            logger.debug("No texts provided for batch embedding")
+            logger.info("No texts provided for batch embedding")
             return []
         
         use_cache = use_cache_override if use_cache_override is not None else self.use_cache

@@ -82,7 +82,7 @@ class PdfParser(Parser):
                         
                         if page_text:
                             pages_text.append(page_text)
-                            logger.debug(
+                            logger.info(
                                 "Extracted text from page",
                                 filepath=str(path),
                                 page=page_num,

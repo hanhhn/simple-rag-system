@@ -208,7 +208,7 @@ def log_function_call(func_name: str, **kwargs: Any) -> None:
         ...     # Function implementation
     """
     logger = get_logger(__name__)
-    logger.debug(
+    logger.info(
         "Function called",
         function=func_name,
         arguments={k: str(v)[:100] if isinstance(v, str) else v for k, v in kwargs.items()}

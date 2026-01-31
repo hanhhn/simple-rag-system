@@ -192,7 +192,7 @@ class StreamHandler:
     def clear(self) -> None:
         """Clear the buffer."""
         self.buffer = ""
-        logger.debug("Stream handler buffer cleared")
+        logger.info("Stream handler buffer cleared")
 
 
 class StreamingCallback:

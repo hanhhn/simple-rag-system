@@ -83,7 +83,7 @@ def init_worker_process(*args, **kwargs):
         from src.embedding.model_loader import ModelLoader
         # The ModelLoader uses a class-level cache, but each worker
         # process will have its own memory space, so this is safe
-        logger.debug("Worker process ready for model loading")
+        logger.info("Worker process ready for model loading")
     except Exception as e:
         logger.warning(
             "Error during worker process initialization",

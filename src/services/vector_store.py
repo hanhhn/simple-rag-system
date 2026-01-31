@@ -1,8 +1,10 @@
 """
 Vector store service using Qdrant.
 """
+import uuid
 from typing import List, Optional, Dict, Any
 
+import httpx
 from qdrant_client import QdrantClient, models as qdrant_models
 from qdrant_client.http.exceptions import UnexpectedResponse
 
@@ -233,9 +235,35 @@ class VectorStore:
             )
         
         try:
+            # Validate vectors
+            if not vectors or len(vectors) == 0:
+                logger.warning("No vectors to insert", collection=collection_name)
+                return
+            
+            # Validate vector dimensions (check first vector)
+            if vectors[0] and len(vectors[0]) > 0:
+                vector_dim = len(vectors[0])
+                logger.info(
+                    "Validating vectors",
+                    collection=collection_name,
+                    count=len(vectors),
+                    dimension=vector_dim
+                )
+            
             # Generate IDs if not provided
             if ids is None:
-                ids = [f"point_{i}" for i in range(len(vectors))]
+                ids = []
+                for i in range(len(vectors)):
+                    # Use UUID for each point (most reliable format)
+                    point_id = str(uuid.uuid4())
+                    ids.append(point_id)
+            
+            logger.info(
+                "Preparing points for insertion",
+                collection=collection_name,
+                point_count=len(vectors),
+                sample_ids=ids[:3] if len(ids) > 3 else ids
+            )
             
             # Create points
             points = []
@@ -243,11 +271,17 @@ class VectorStore:
                 point = qdrant_models.PointStruct(
                     id=point_id,
                     vector=vector,
-                    payload=payloads[i] if payloads else None
+                    payload=payloads[i] if payloads and i < len(payloads) else None
                 )
                 points.append(point)
             
             # Insert points
+            logger.info(
+                "Inserting points into Qdrant",
+                collection=collection_name,
+                point_count=len(points)
+            )
+            
             self.client.upsert(
                 collection_name=collection_name,
                 points=points
@@ -523,6 +557,6 @@ class VectorStore:
         """Close Qdrant client connection."""
         try:
             self.client.close()
-            logger.debug("Qdrant client closed")
+            logger.info("Qdrant client closed")
         except Exception as e:
             logger.warning("Failed to close Qdrant client", error=str(e))
